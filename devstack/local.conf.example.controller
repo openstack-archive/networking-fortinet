@@ -1,0 +1,67 @@
+[[local|localrc]]
+
+disable_service n-net
+disable_service n-cpu
+disable_service ceilometer-acompute
+disable_service tempest
+enable_service q-svc q-meta n-novnc
+
+# CHANGEME: customized git repo location
+enable_plugin networking-fortinet file:///home/stack/networking-fortinet stable/liberty
+#enable_plugin networking-fortinet http://10.160.2.223:8080/networking-fortinet stable/liberty
+
+IP_VERSION=4
+Q_PLUGIN=ml2
+ENABLE_TENANT_VLANS=True
+ML2_L3_PLUGIN=router_fortinet
+Q_ML2_PLUGIN_MECHANISM_DRIVERS='openvswitch,fortinet'
+Q_ML2_PLUGIN_VLAN_TYPE_OPTIONS='network_vlan_ranges=physnet1:1009:1099'
+Q_ML2_PLUGIN_TYPE_DRIVERS=local,flat,vlan,gre,vxlan
+Q_ML2_TENANT_NETWORK_TYPE=vlan
+PROVIDER_NETWORK_TYPE=vlan
+
+# fortigate ml2 plugin parameters
+# CHANGEME: ip address of the fortigate rest API
+Q_FORTINET_PLUGIN_FG_IP=192.168.121.187
+# CHANGEME: interface for tenant traffic
+Q_FORTINET_PLUGIN_FG_INT_INF=port2
+# CHANGEME: interface for external traffic
+Q_FORTINET_PLUGIN_FG_EXT_INF=port3
+# CHANGEME: if use fortivm set to False, True if hardware npu available
+Q_FORTINET_PLUGIN_NPU_AVAILABLE=False
+
+# generic configuration parameters
+# CHANGEME: if needed
+DATABASE_PASSWORD=secretsecret
+RABBIT_PASSWORD=secretsecret
+SERVICE_TOKEN=secretsecret
+SERVICE_PASSWORD=secretsecret
+ADMIN_PASSWORD=secretsecret
+
+API_RATE_LIMIT="False"
+RECLONE="True"
+
+# database configuration parameters
+
+DATABASE_TYPE=mysql
+
+# networking configuration parameters
+# CHANGEME: control plane nic
+HOST_IP_IFACE=eth1
+
+# logging configuration parameters
+
+LOGFILE=/opt/stack/logs/stack.sh.log
+VERBOSE=True
+LOG_COLOR=True
+SCREEN_LOGDIR=/opt/stack/logs
+
+
+# configure images provided on glance (manager)
+
+IMAGE_URLS="http://download.cirros-cloud.net/0.3.3/cirros-0.3.3-x86_64-uec.tar.gz"
+IMAGE_URLS+=","
+
+enable_service dstat
+CEILOMETER_BACKEND=mongodb
+
