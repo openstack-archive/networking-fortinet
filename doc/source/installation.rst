@@ -106,4 +106,10 @@ On the controller node:
 
 4. neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head
 
-5. restart neutron server service. service neutron-server start or systemctl restart neutron-server
+5. restart neutron server service. service neutron-server restart or systemctl restart neutron-server
+
+6. If you don't have existing configuration, you are done here, but if not, you have existing configuration including networks, subnets, routers, ports and VMs based on tenant network of VLAN type and you want to preserve them, run::
+
+   $ fortinet_migration
+
+7. After the migration, shutdown network node completely if you have a seperate network node. If network node(L3 agent, DHCP agent, Metadata agent) co-exists with controller or compute node, disable L3,DHCP,Metadata agent services and reboot the node.

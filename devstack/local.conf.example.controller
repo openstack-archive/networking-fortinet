@@ -52,16 +52,9 @@ HOST_IP_IFACE=eth1
 # logging configuration parameters
 
 LOGFILE=/opt/stack/logs/stack.sh.log
-VERBOSE=True
-LOG_COLOR=True
+VERBOSE=False
+ENABLE_DEBUG_LOG_LEVEL=False
+LOG_COLOR=False
 SCREEN_LOGDIR=/opt/stack/logs
 
-
-# configure images provided on glance (manager)
-
-IMAGE_URLS="http://download.cirros-cloud.net/0.3.3/cirros-0.3.3-x86_64-uec.tar.gz"
-IMAGE_URLS+=","
-
 enable_service dstat
-CEILOMETER_BACKEND=mongodb
-

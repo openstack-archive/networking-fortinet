@@ -66,7 +66,10 @@ def check(obj, context, vdom, resource=resources.VlanInterface):
 def getid(context):
     id = getattr(context, 'request_id', None)
     if not id:
-        raise ValueError("not get request_id")
+        if not getattr(context, 'session', None):
+            return const.INIT_TASK_ID
+        else:
+            raise ValueError("not get request_id")
     return id
 
 
@@ -171,6 +174,9 @@ def add_resource_with_id(obj, context, record, resource, **kwargs):
             return res
         except exception.ResourceNotFound:
             pass
+    else:
+        # TODO(samsu): may add search device data later
+        res = op(obj, context, resource.get, vdom=record.vdom)
     return op(obj, context, resource.add, **kwargs)
 
 
@@ -223,12 +229,30 @@ def delete_vdom(obj, context, **kwargs):
     cls = fortinet_db.Fortinet_ML2_Namespace
     namespace = fortinet_db.query_record(context, cls, **kwargs)
     if namespace:
-        try:
-            op(obj, context, resources.Vdom.get, name=namespace.vdom)
-            op(obj, context, resources.Vdom.delete, name=namespace.vdom)
-        except Exception as e:
-            resources.Exinfo(e)
-        fortinet_db.delete_record(context, cls, **kwargs)
+        tenant_id = namespace.tenant_id
+        if not fortinet_db.query_count(context, l3_db.Router,
+                                       tenant_id=tenant_id) and \
+            not fortinet_db.query_count(context, models_v2.Network,
+                                       tenant_id=tenant_id) and \
+            not fortinet_db.query_count(context, l3_db.FloatingIP,
+                                        tenant_id=tenant_id):
+            try:
+                op(obj, context, resources.Vdom.get, name=namespace.vdom)
+                op(obj, context, resources.Vdom.delete, name=namespace.vdom)
+            except Exception as e:
+                resources.Exinfo(e)
+            fortinet_db.delete_record(context, cls, **kwargs)
+        else:
+            db_routers = fortinet_db.query_records(context, l3_db.Router,
+                                                   tenant_id=tenant_id)
+            db_networks = fortinet_db.query_records(context, models_v2.Network,
+                                                    tenant_id=tenant_id)
+            db_fips = fortinet_db.query_records(context, l3_db.FloatingIP,
+                                                tenant_id=tenant_id)
+            LOG.debug("Keeping vdom, because existing db_routers: %(routers)s,"
+                      "db_networks: %(networks)s, db_fips: %(fips)s",
+                      {'routers': db_routers, 'networks': db_networks,
+                       'fips': db_fips})
     return namespace
 
 
@@ -256,10 +280,11 @@ def add_vlanintf(obj, context, **kwargs):
 
 def set_vlanintf(obj, context, **kwargs):
     cls = fortinet_db.Fortinet_Interface
-    record = fortinet_db.query_record(context, cls, **kwargs)
-    backup_fields(record, **kwargs)
-    cls.update_record(context, record, **kwargs)
-    pass
+    record = cls.query(context, **kwargs)
+    #backup_fields(record, **kwargs)
+    if not record:
+        cls.add_record(context, **kwargs)
+        op(obj, context, resources.VlanInterface.set, **kwargs)
 
 
 def delete_vlanintf(obj, context, **kwargs):
@@ -277,6 +302,17 @@ def add_dhcpserver(obj, context, **kwargs):
                                resources.DhcpServer, **kwargs)
     if not record.edit_id:
         cls.update_record(context, record, edit_id=res['results']['mkey'])
+
+
+def set_dhcpserver(obj, context, **kwargs):
+    cls = fortinet_db.Fortinet_ML2_Subnet
+    if 'subnet_id' in kwargs:
+        record = cls.query(context, subnet_id=kwargs['subnet_id'])
+        if record.edit_id:
+            cls.update_record(context, record, **kwargs)
+            kwargs.pop('subnet_id', None)
+            kwargs.setdefault('id', record.edit_id)
+            op(obj, context, resources.DhcpServer.set, **kwargs)
 
 
 def delete_dhcpserver(obj, context, **kwargs):
@@ -421,6 +457,19 @@ def add_routerstatic(obj, context, **kwargs):
     if not getattr(record, 'edit_id'):
         cls.update_record(context, record, edit_id=res['results']['mkey'])
     return record
+
+
+def set_routerstatic(obj, context, **kwargs):
+    cls = fortinet_db.Fortinet_Static_Router
+    if 'gateway' in kwargs:
+        gateway = kwargs.pop('gateway', None)
+        record = cls.query(context, **kwargs)
+        if gateway == record.gateway:
+            return
+        elif record.edit_id:
+            cls.update_record(context, record, gateway=gateway)
+            kwargs.setdefault('id', record.edit_id)
+            op(obj, context, resources.RouterStatic.set, **kwargs)
 
 
 def delete_routerstatic(obj, context, **kwargs):
@@ -586,9 +635,22 @@ def add_vlink(obj, context, vdom):
 
 
 def delete_vlink(obj, context, tenant_id):
+    if fortinet_db.query_count(context, l3_db.Router,
+                               tenant_id=tenant_id) or \
+        fortinet_db.query_count(context, l3_db.FloatingIP,
+                                tenant_id=tenant_id):
+        db_routers = fortinet_db.query_records(context, l3_db.Router,
+                                               tenant_id=tenant_id)
+        db_fips = fortinet_db.query_records(context, l3_db.FloatingIP,
+                                            tenant_id=tenant_id)
+        LOG.debug("Keeping vlink, because existing data "
+                  "db_routers: %(routers)s, db_fips: %(fips)s",
+                 {'routers': db_routers, 'fips': db_fips})
+        return False
     vdom = fortinet_db.query_record(context,
                                     fortinet_db.Fortinet_ML2_Namespace,
                                    tenant_id=tenant_id).vdom
+
     vlink_vlan = fortinet_db.query_record(context,
                             fortinet_db.Fortinet_Vlink_Vlan_Allocation,
                             vdom=vdom,
@@ -651,12 +713,11 @@ def add_interface_ip(obj, context, **kwargs):
             return
         add_record(obj, context,
                    fortinet_db.Fortinet_Interface_subip, **kwargs)
-
-        org_subips.append(kwargs.get('ip'))
-        op(obj, context, resources.VlanInterface.set,
-           name=kwargs.get('name'),
-           vdom=kwargs.get('vdom'),
-           secondaryips=org_subips)
+        #org_subips.append(kwargs.get('ip'))
+        #op(obj, context, resources.VlanInterface.set,
+        #   name=kwargs.get('name'),
+        #   vdom=kwargs.get('vdom'),
+        #   secondaryips=org_subips)
 
 
 def delete_interface_ip(obj, context, **kwargs):
@@ -676,10 +737,10 @@ def delete_interface_ip(obj, context, **kwargs):
     org_subips = [getattr(record, 'ip') for record in records]
     if kwargs.get('ip') in org_subips:
         org_subips.remove(kwargs["ip"])
-        op(obj, context, resources.VlanInterface.set,
-           name=kwargs.get('name'),
-           vdom=kwargs.get('vdom'),
-           secondaryips=org_subips)
+        #op(obj, context, resources.VlanInterface.set,
+        #   name=kwargs.get('name'),
+        #   vdom=kwargs.get('vdom'),
+        #   secondaryips=org_subips)
         fortinet_db.delete_record(context,
                                   fortinet_db.Fortinet_Interface_subip,
                                   **kwargs)
@@ -800,7 +861,7 @@ def set_ext_gw(obj, context, port):
         raise ValueError
 
     namespace = add_vdom(obj, context, tenant_id=tenant_id)
-    add_vlink(obj, context, namespace.vdom)
+    #add_vlink(obj, context, namespace.vdom)
     vlink_db = fortinet_db.query_record(context,
                                 fortinet_db.Fortinet_Vlink_Vlan_Allocation,
                                 vdom=namespace.vdom)
@@ -835,17 +896,18 @@ def clr_ext_gw(obj, context, port):
                         name=obj._fortigate['ext_interface'],
                         vdom=const.EXT_VDOM,
                         ip=ip)
+
     delete_fwpolicy(obj, context, vdom=const.EXT_VDOM, poolname=ip_address)
     delete_fwippool(obj, context, vdom=const.EXT_VDOM, name=ip_address)
-    router_db = fortinet_db.query_record(context, l3_db.Router,
-                                         id=port['device_id'])
-    tenant_id = router_db.get('tenant_id', None)
-    if tenant_id:
-        delete_vlink(obj, context, tenant_id=tenant_id)
-        if (not [getattr(record, 'gw_port_id', None) for record in
-                 fortinet_db.query_records(context, l3_db.Router,
-                                           tenant_id=tenant_id)
-                 if getattr(record, 'gw_port_id', None)] and
-           not fortinet_db.query_count(context, models_v2.Network,
-                                       tenant_id=tenant_id)):
-            delete_vdom(obj, context, tenant_id=tenant_id)
+    #router_db = fortinet_db.query_record(context, l3_db.Router,
+    #                                     id=port['device_id'])
+    #tenant_id = router_db.get('tenant_id', None)
+    #if tenant_id:
+    #    #delete_vlink(obj, context, tenant_id=tenant_id)
+    #    if (not [getattr(record, 'gw_port_id', None) for record in
+    #             fortinet_db.query_records(context, l3_db.Router,
+    #                                       tenant_id=tenant_id)
+    #             if getattr(record, 'gw_port_id', None)] and
+    #       not fortinet_db.query_count(context, models_v2.Network,
+    #                                   tenant_id=tenant_id)):
+    #        delete_vdom(obj, context, tenant_id=tenant_id)

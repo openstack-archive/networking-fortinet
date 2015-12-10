@@ -173,7 +173,14 @@ ADD_DHCP_SERVER = """
         {% endif %}
         "json": {
             "status":"enable",
+            {% if dns_nameservers is defined and dns_nameservers %}
+            "dns-service":"specify",
+            {% for dns in dns_nameservers[:3] %}
+            "dns-server{{ loop.index }}":"{{ dns }}",
+            {% endfor %}
+            {% else %}
             "dns-service":"local",
+            {% endif %}
             {% if gateway != None %}
             "default-gateway":"{{ gateway }}",
             {% endif %}
@@ -189,6 +196,42 @@ ADD_DHCP_SERVER = """
     }
 }
 """
+
+SET_DHCP_SERVER = """
+{
+    "path":"/api/v2/cmdb/system.dhcp/server/{{ id }}/",
+    "method": "PUT",
+    "body": {
+        "name": "server",
+        {% if vdom is defined %}
+        "vdom": "{{ vdom }}",
+        {% endif %}
+        "json": {
+            "status":"enable",
+            {% if dns_nameservers is defined and dns_nameservers %}
+            "dns-service":"specify",
+            {% for dns in dns_nameservers[:3] %}
+            "dns-server{{ loop.index }}":"{{ dns }}",
+            {% endfor %}
+            {% else %}
+            "dns-service":"local",
+            {% endif %}
+            {% if gateway != None %}
+            "default-gateway":"{{ gateway }}",
+            {% endif %}
+            "netmask":"{{ netmask }}",
+            "interface":"{{ interface }}",
+            "ip-range":[
+                {
+                    "start-ip":"{{ start_ip }}",
+                    "end-ip":"{{ end_ip }}"
+                }
+            ]
+        }
+    }
+}
+"""
+
 
 DELETE_DHCP_SERVER = """
 {
@@ -319,6 +362,25 @@ ADD_ROUTER_STATIC = """
 {
     "path": "/api/v2/cmdb/router/static/",
     "method": "POST",
+    "body": {
+        {% if vdom is defined %}
+            "vdom": "{{ vdom }}",
+        {% else %}
+            "vdom": "root",
+        {% endif %}
+        "json": {
+            "dst": "{{ dst }}",
+            "device": "{{ device }}",
+            "gateway": "{{gateway }}"
+        }
+    }
+}
+"""
+
+SET_ROUTER_STATIC = """
+{
+    "path": "/api/v2/cmdb/router/static/{{ id }}/",
+    "method": "PUT",
     "body": {
         {% if vdom is defined %}
             "vdom": "{{ vdom }}",
