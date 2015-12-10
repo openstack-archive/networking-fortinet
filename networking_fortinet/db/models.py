@@ -16,6 +16,7 @@
 
 """Fortinet specific database schema/model."""
 
+import copy
 from oslo_db import exception as os_db_exception
 ## TODO(samsu): add log here temporarily
 from oslo_log import log as logging
@@ -72,7 +73,7 @@ def query_count(context, cls, **kwargs):
 
 
 def get_session(context):
-    return context.session if hasattr(context, 'session') else context
+    return context.session if getattr(context, 'session', None) else context
 
 
 def primary_keys(cls):
@@ -114,13 +115,16 @@ class DBbase(object):
     def add_record(cls, context, **kwargs):
         """Add vlanid to be allocated into the table."""
         session = get_session(context)
+        _kwargs = copy.copy(kwargs)
+        for key in _kwargs:
+            if not hasattr(cls, key):
+                kwargs.pop(key, None)
         with session.begin(subtransactions=True):
             record = cls.query(context, **kwargs)
             if not record:
                 record = cls()
                 for key, value in six.iteritems(kwargs):
-                    if hasattr(record, key):
-                        setattr(record, key, value)
+                    setattr(record, key, value)
                 session.add(record)
                 rollback = cls._prepare_rollback(context,
                                                  cls.delete_record,

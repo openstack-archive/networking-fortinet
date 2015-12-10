@@ -33,14 +33,14 @@ ML2_FORTINET = [
                help=_('The interface to the external network')),
     cfg.StrOpt('tenant_network_type', default='vlan',
                help=_('tenant network type, default is vlan')),
-    cfg.StrOpt('vlink_vlan_id_range', default='3900:4000',
-               help=_('vdom link vlan interface, default is 3900:4000')),
-    cfg.StrOpt('vlink_ip_range', default='169.254.0.0/26',
+    cfg.StrOpt('vlink_vlan_id_range', default='3500:4000',
+               help=_('vdom link vlan interface, default is 3500:4000')),
+    cfg.StrOpt('vlink_ip_range', default='169.254.0.0/20',
                help=_('vdom link interface IP range, '
                      'default is 169.254.0.0/20')),
-    cfg.StrOpt('vip_mappedip_range', default='169.254.128.0/24',
+    cfg.StrOpt('vip_mappedip_range', default='169.254.128.0/23',
                help=_('The intermediate IP range in floating IP process, '
-                     'default is 169.254.128.0/24')),
+                     'default is 169.254.128.0/23')),
     cfg.BoolOpt('npu_available', default=True,
                 help=_('If npu_available is True, it requires hardware FGT'
                       'with NPU, default is True'))

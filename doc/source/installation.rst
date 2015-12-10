@@ -106,4 +106,4 @@ On the controller node:
 
 4. neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head
 
-5. restart neutron server service. service neutron-server start or systemctl restart neutron-server
+5. restart neutron server service. service neutron-server restart or systemctl restart neutron-server

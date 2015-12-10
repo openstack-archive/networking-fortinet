@@ -35,6 +35,8 @@ EXT_VDOM = 'osvdmext'
 EXT_DEF_DST = '0.0.0.0 0.0.0.0'
 DEF_GW = '0.0.0.0'
 FIELD_DELIMITER = ':'
+INIT_TASK_ID = 'init_task_id'
+FAKE_TENANT_ID = '__fake_tenant_id_for_default_vdom'
 FORTINET_PARAMS = {
     'vlink_vlan_id_range': {
         'cls': 'Fortinet_Vlink_Vlan_Allocation',

@@ -89,11 +89,49 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
         self._driver = client.FortiosApiClient(api_server,
             self._fortigate['username'], self._fortigate['password'])
 
+    def create_router(self, context, router):
+        LOG.debug("create_router: router=%s" % (router))
+        # Limit one router per tenant
+        if not router.get('router', None):
+            return
+        tenant_id = router['router']['tenant_id']
+        with context.session.begin(subtransactions=True):
+            try:
+                if fortinet_db.query_count(context, l3_db.Router,
+                                           tenant_id=tenant_id):
+                    raise Exception(_("FortinetL3ServicePlugin:create_router "
+                                      "Only support one router per tenant"))
+                namespace = utils.add_vdom(self, context, tenant_id=tenant_id)
+                utils.add_vlink(self, context, namespace.vdom)
+            except Exception as e:
+                LOG.error(_LE("Failed to create_router router=%(router)s"),
+                          {"router": router})
+                resources.Exinfo(e)
+                utils._rollback_on_err(self, context, e)
+        utils.update_status(self, context, t_consts.TaskStatus.COMPLETED)
+        return super(FortinetL3ServicePlugin, self).\
+            create_router(context, router)
+
     def update_router(self, context, id, router):
         LOG.debug("update_router: id=%(id)s, router=%(router)s",
                   {'id': id, 'router': router})
         return (super(FortinetL3ServicePlugin, self).
                 update_router(context, id, router))
+
+    def delete_router(self, context, id):
+        LOG.debug("delete_router: router id=%s" % (id))
+        try:
+            with context.session.begin(subtransactions=True):
+                router = fortinet_db.query_record(context, l3_db.Router, id=id)
+                super(FortinetL3ServicePlugin, self).delete_router(context, id)
+                if getattr(router, 'tenant_id', None):
+                    utils.delete_vlink(self, context, router.tenant_id)
+                    utils.delete_vdom(self, context,
+                                      tenant_id=router.tenant_id)
+        except Exception as e:
+            LOG.error(_LE("Failed to delete_router routerid=%(id)s"),
+                      {"id": id})
+            resources.Exinfo(e)
 
     def add_router_interface(self, context, router_id, interface_info):
         """creates vlnk on the fortinet device."""
@@ -108,13 +146,11 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
             port['admin_state_up'] = True
             port['port'] = port
             LOG.debug("FortinetL3ServicePlugin: "
-                  "context=%(context)s"
-                  "port=%(port)s "
-                  "info=%(info)r",
-                  {'context': context, 'port': port, 'info': info})
-
+                      "context=%(context)s"
+                      "port=%(port)s "
+                      "info=%(info)r",
+                      {'context': context, 'port': port, 'info': info})
             #self._core_plugin.update_port(context, info["port_id"], port)
-
             interface_info = info
             subnet = self._core_plugin._get_subnet(context,
                                                    interface_info['subnet_id'])
@@ -221,14 +257,13 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
             raise Exception("Failed to create the floating ip")
 
     def delete_floatingip(self, context, id):
-        LOG.debug("delete_floatingip: id=%s", id)
+        LOG.debug("delete_floatingip called() id=%s", id)
         fip = fortinet_db.query_record(context, l3_db.FloatingIP, id=id)
         if fip and getattr(fip, 'fixed_port_id', None):
             self._disassociate_floatingip(context, id)
             super(FortinetL3ServicePlugin, self).disassociate_floatingips(
                 context, fip['fixed_port_id'])
         self._release_floatingip(context, id)
-        super(FortinetL3ServicePlugin, self).delete_floatingip(context, id)
 
     def update_floatingip_status(self, context, res, status, **kwargs):
         if res.get('status', None):
@@ -417,73 +452,73 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
             status=u'DOWN'
         }
         """
-        try:
-            db_namespace = fortinet_db.query_record(context,
-                                        fortinet_db.Fortinet_ML2_Namespace,
-                                        tenant_id=obj['tenant_id'])
+        with context.session.begin(subtransactions=True):
+            try:
+                db_namespace = utils.add_vdom(self, context,
+                                              tenant_id=obj['tenant_id'])
 
-            db_fip = utils.add_record(self, context,
-                            fortinet_db.Fortinet_FloatingIP_Allocation,
-                            vdom=db_namespace.vdom,
-                            floating_ip_address=obj['floating_ip_address'],
-                            vip_name=obj['floating_ip_address'])
-            mappedip = utils.get_ipaddr(db_fip.ip_subnet, 0)
-            utils.add_vip(self, context,
-                          vdom=const.EXT_VDOM,
-                          name=db_fip.vip_name,
-                          extip=db_fip.floating_ip_address,
-                          extintf='any',
-                          mappedip=mappedip)
+                db_fip = utils.add_record(self, context,
+                                fortinet_db.Fortinet_FloatingIP_Allocation,
+                                vdom=db_namespace.vdom,
+                                floating_ip_address=obj['floating_ip_address'],
+                                vip_name=obj['floating_ip_address'])
+                mappedip = utils.get_ipaddr(db_fip.ip_subnet, 0)
+                utils.add_vip(self, context,
+                              vdom=const.EXT_VDOM,
+                              name=db_fip.vip_name,
+                              extip=db_fip.floating_ip_address,
+                              extintf='any',
+                              mappedip=mappedip)
 
-            int_intf, ext_intf = utils.get_vlink_intf(self, context,
-                                                   vdom=db_namespace.vdom)
+                int_intf, ext_intf = utils.get_vlink_intf(self, context,
+                                                       vdom=db_namespace.vdom)
 
-            #utils.add_secondaryip(self, context,
-            #                      name=ext_inf,
-            #                      vdom=db_namespace.vdom,
-            #                      ip=utils.getip(db_fip.ip_subnet, 1))
+                #utils.add_secondaryip(self, context,
+                #                      name=ext_inf,
+                #                      vdom=db_namespace.vdom,
+                #                      ip=utils.getip(db_fip.ip_subnet, 1))
 
-            utils.add_fwpolicy(self, context,
-                               vdom=const.EXT_VDOM,
-                               srcintf=self._fortigate['ext_interface'],
-                               dstintf=ext_intf,
-                               dstaddr=db_fip.vip_name,
-                               nat='enable')
-
-            utils.add_routerstatic(self, context,
+                utils.add_fwpolicy(self, context,
                                    vdom=const.EXT_VDOM,
-                                   dst="%s 255.255.255.255" % mappedip,
-                                   device=ext_intf,
-                                   gateway=const.DEF_GW)
+                                   srcintf=self._fortigate['ext_interface'],
+                                   dstintf=ext_intf,
+                                   dstaddr=db_fip.vip_name,
+                                   nat='enable')
 
-            utils.add_fwippool(self, context,
-                               name=db_fip.floating_ip_address,
-                               vdom=const.EXT_VDOM,
-                               startip=db_fip.floating_ip_address)
-
-            #ipaddr = utils.get_ipaddr(db_fip.ip_subnet, 2)
-            utils.add_fwaddress(self, context,
-                                name=mappedip,
-                                vdom=const.EXT_VDOM,
-                                subnet="%s 255.255.255.255" % mappedip)
-
-            db_fwpolicy = utils.add_fwpolicy(self, context,
-                               vdom=const.EXT_VDOM,
-                               srcintf=ext_intf,
-                               srcaddr=mappedip,
-                               dstintf=self._fortigate['ext_interface'],
-                               poolname=db_fip.floating_ip_address)
-            utils.head_firewall_policy(self, context,
+                utils.add_routerstatic(self, context,
                                        vdom=const.EXT_VDOM,
-                                       id=db_fwpolicy.edit_id)
+                                       dst="%s 255.255.255.255" % mappedip,
+                                       device=ext_intf,
+                                       gateway=const.DEF_GW)
 
-            utils.add_fwippool(self, context,
-                               name=mappedip,
-                               vdom=db_namespace.vdom,
-                               startip=mappedip)
-        except Exception as e:
-            utils._rollback_on_err(self, context, e)
-            raise e
+                utils.add_fwippool(self, context,
+                                   name=db_fip.floating_ip_address,
+                                   vdom=const.EXT_VDOM,
+                                   startip=db_fip.floating_ip_address)
+
+                #ipaddr = utils.get_ipaddr(db_fip.ip_subnet, 2)
+                utils.add_fwaddress(self, context,
+                                    name=mappedip,
+                                    vdom=const.EXT_VDOM,
+                                    subnet="%s 255.255.255.255" % mappedip)
+
+                db_fwpolicy = utils.add_fwpolicy(self, context,
+                                   vdom=const.EXT_VDOM,
+                                   srcintf=ext_intf,
+                                   srcaddr=mappedip,
+                                   dstintf=self._fortigate['ext_interface'],
+                                   poolname=db_fip.floating_ip_address)
+                utils.head_firewall_policy(self, context,
+                                           vdom=const.EXT_VDOM,
+                                           id=db_fwpolicy.edit_id)
+
+                utils.add_fwippool(self, context,
+                                   name=mappedip,
+                                   vdom=db_namespace.vdom,
+                                   startip=mappedip)
+            except Exception as e:
+                utils._rollback_on_err(self, context, e)
+                raise e
         utils.update_status(self, context, t_consts.TaskStatus.COMPLETED)
 
     def _release_floatingip(self, context, id):
@@ -504,69 +539,74 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
         }
         :return:
         """
-        l3db_fip = self._get_floatingip(context, id)
-        db_namespace = fortinet_db.query_record(context,
-                                fortinet_db.Fortinet_ML2_Namespace,
-                                tenant_id=l3db_fip.tenant_id)
+        with context.session.begin(subtransactions=True):
+            l3db_fip = self._get_floatingip(context, id)
+            tenant_id = l3db_fip.tenant_id
+            db_namespace = fortinet_db.query_record(context,
+                                    fortinet_db.Fortinet_ML2_Namespace,
+                                    tenant_id=tenant_id)
 
-        db_fip = fortinet_db.query_record(context,
+            db_fip = fortinet_db.query_record(context,
                             fortinet_db.Fortinet_FloatingIP_Allocation,
                             floating_ip_address=l3db_fip.floating_ip_address,
                             allocated=True)
-        if not db_fip or not db_namespace:
-            return
+            if not db_fip or not db_namespace:
+                return
 
-        int_intf, ext_intf = utils.get_vlink_intf(self, context,
-                                                 vdom=db_namespace.vdom)
-        mappedip = utils.get_ipaddr(db_fip.ip_subnet, 0)
+            int_intf, ext_intf = utils.get_vlink_intf(self, context,
+                                                     vdom=db_namespace.vdom)
+            mappedip = utils.get_ipaddr(db_fip.ip_subnet, 0)
 
-        utils.delete_fwippool(self, context,
-                              name=mappedip,
-                              vdom=db_namespace.vdom,
-                              startip=mappedip)
+            utils.delete_fwippool(self, context,
+                                  name=mappedip,
+                                  vdom=db_namespace.vdom,
+                                  startip=mappedip)
 
-        utils.delete_fwpolicy(self, context,
-                              vdom=const.EXT_VDOM,
-                              srcintf=ext_intf,
-                              srcaddr=mappedip,
-                              dstintf=self._fortigate['ext_interface'],
-                              poolname=db_fip.floating_ip_address)
-
-        utils.delete_fwaddress(self, context,
-                               name=mappedip,
-                               vdom=const.EXT_VDOM,
-                               subnet="%s 255.255.255.255" % mappedip)
-
-        utils.delete_fwippool(self, context,
-                              name=db_fip.floating_ip_address,
-                              vdom=const.EXT_VDOM,
-                              startip=db_fip.floating_ip_address)
-
-        utils.delete_routerstatic(self, context,
+            utils.delete_fwpolicy(self, context,
                                   vdom=const.EXT_VDOM,
-                                  dst="%s 255.255.255.255" % mappedip,
-                                  device=ext_intf,
-                                  gateway=const.DEF_GW)
+                                  srcintf=ext_intf,
+                                  srcaddr=mappedip,
+                                  dstintf=self._fortigate['ext_interface'],
+                                  poolname=db_fip.floating_ip_address)
 
-        utils.delete_fwpolicy(self, context,
-                              vdom=const.EXT_VDOM,
-                              dstintf=ext_intf,
-                              dstaddr=l3db_fip.floating_ip_address)
+            utils.delete_fwaddress(self, context,
+                                   name=mappedip,
+                                   vdom=const.EXT_VDOM,
+                                   subnet="%s 255.255.255.255" % mappedip)
 
-        #utils.delete_secondaryip(self, context,
-        #                         name=ext_inf,
-        #                         vdom=const.EXT_VDOM,
-        #                         ip=utils.getip(db_fip.ip_subnet, 1))
+            utils.delete_fwippool(self, context,
+                                  name=db_fip.floating_ip_address,
+                                  vdom=const.EXT_VDOM,
+                                  startip=db_fip.floating_ip_address)
 
-        utils.delete_vip(self, context,
-                         vdom=const.EXT_VDOM,
-                         name=db_fip.vip_name,
-                         extip=db_fip.floating_ip_address,
-                         extintf='any',
-                         mappedip=mappedip)
+            utils.delete_routerstatic(self, context,
+                                      vdom=const.EXT_VDOM,
+                                      dst="%s 255.255.255.255" % mappedip,
+                                      device=ext_intf,
+                                      gateway=const.DEF_GW)
 
-        fortinet_db.delete_record(context,
-                        fortinet_db.Fortinet_FloatingIP_Allocation,
-                        vdom=db_namespace.vdom,
-                        floating_ip_address=db_fip.floating_ip_address,
-                        vip_name=db_fip.floating_ip_address)
+            utils.delete_fwpolicy(self, context,
+                                  vdom=const.EXT_VDOM,
+                                  dstintf=ext_intf,
+                                  dstaddr=l3db_fip.floating_ip_address)
+
+            #utils.delete_secondaryip(self, context,
+            #                         name=ext_inf,
+            #                         vdom=const.EXT_VDOM,
+            #                         ip=utils.getip(db_fip.ip_subnet, 1))
+
+            utils.delete_vip(self, context,
+                             vdom=const.EXT_VDOM,
+                             name=db_fip.vip_name,
+                             extip=db_fip.floating_ip_address,
+                             extintf='any',
+                             mappedip=mappedip)
+
+            fortinet_db.delete_record(context,
+                            fortinet_db.Fortinet_FloatingIP_Allocation,
+                            vdom=db_namespace.vdom,
+                            floating_ip_address=db_fip.floating_ip_address,
+                            vip_name=db_fip.floating_ip_address)
+            super(FortinetL3ServicePlugin, self).delete_floatingip(context, id)
+            utils.delete_vlink(self, context, tenant_id)
+            utils.delete_vdom(self, context, tenant_id=tenant_id)
