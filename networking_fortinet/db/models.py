@@ -16,6 +16,7 @@
 
 """Fortinet specific database schema/model."""
 
+import copy
 from oslo_db import exception as os_db_exception
 ## TODO(samsu): add log here temporarily
 from oslo_log import log as logging
@@ -72,7 +73,7 @@ def query_count(context, cls, **kwargs):
 
 
 def get_session(context):
-    return context.session if hasattr(context, 'session') else context
+    return context.session if getattr(context, 'session', None) else context
 
 
 def primary_keys(cls):
@@ -87,13 +88,29 @@ def primary_keys(cls):
 
 
 def db_query(cls, context, **kwargs):
-    """Get a filtered vlink_vlan_allocation record."""
+    """
+    :param cls:
+    :param context:
+    :param kwargs:
+    :return:
+    """
     session = get_session(context)
     query = session.query(cls)
     for key, value in six.iteritems(kwargs):
         kw = {key: value}
         query = query.filter_by(**kw)
     return query
+
+
+def query_with_lock(cls, context, **kwargs):
+    """
+    :param cls:
+    :param context:
+    :param kwargs: read=False, nowait=False, of=None
+    :return:
+    """
+    session = get_session(context)
+    return session.query(cls).with_for_update(**kwargs)
 
 
 class DBbase(object):
@@ -114,13 +131,16 @@ class DBbase(object):
     def add_record(cls, context, **kwargs):
         """Add vlanid to be allocated into the table."""
         session = get_session(context)
+        _kwargs = copy.copy(kwargs)
+        for key in _kwargs:
+            if not hasattr(cls, key):
+                kwargs.pop(key, None)
         with session.begin(subtransactions=True):
             record = cls.query(context, **kwargs)
             if not record:
                 record = cls()
                 for key, value in six.iteritems(kwargs):
-                    if hasattr(record, key):
-                        setattr(record, key, value)
+                    setattr(record, key, value)
                 session.add(record)
                 rollback = cls._prepare_rollback(context,
                                                  cls.delete_record,
@@ -154,21 +174,27 @@ class DBbase(object):
         return record
 
     @classmethod
+    def db_query(cls, context, **kwargs):
+        """
+        :param context:
+        :param kwargs:
+        :return:
+        """
+        return db_query(cls, context, **kwargs)
+
+    @classmethod
     def query(cls, context, **kwargs):
-        """Get a filtered vlink_vlan_allocation record."""
-        query = db_query(cls, context, **kwargs)
+        query = cls.db_query(context, **kwargs)
         return query.first()
 
     @classmethod
     def query_all(cls, context, **kwargs):
-        """Get a filtered vlink_vlan_allocation record."""
-        query = db_query(cls, context, **kwargs)
+        query = cls.db_query(context, **kwargs)
         return query.all()
 
     @classmethod
     def query_count(cls, context, **kwargs):
-        """Get a filtered vlink_vlan_allocation record."""
-        query = db_query(cls, context, **kwargs)
+        query = cls.db_query(context, **kwargs)
         return query.count()
 
     @staticmethod
@@ -287,7 +313,8 @@ class Fortinet_Vlink_Vlan_Allocation(model_base.BASEV2, models_v2.HasId,
                                   kwargs['vdom'] + const.POSTFIX['vext'])
             # TODO(samsu): if no vlanid needed, then it should able to add
             # a new record, consider to separate vlanid to a table.
-            record = cls.query(context, allocated=False)
+            record = query_with_lock(
+                cls, context).filter_by(allocated=False).first()
             record.update_record(context, record, **kwargs)
             rollback = cls._prepare_rollback(context, cls.delete_record,
                                              **kwargs)
@@ -334,7 +361,8 @@ class Fortinet_Vlink_IP_Allocation(model_base.BASEV2, DBbase):
         with session.begin(subtransactions=True):
             record = cls.query(context, **kwargs)
             if not record:
-                record = cls.query(context, allocated=False)
+                record = query_with_lock(
+                    cls, context).filter_by(allocated=False).first()
                 kwargs.setdefault('allocated', True)
                 record.update_record(context, record, **kwargs)
                 rollback = cls._prepare_rollback(context,
@@ -417,7 +445,8 @@ class Fortinet_FloatingIP_Allocation(model_base.BASEV2, DBbase):
         with session.begin(subtransactions=True):
             record = cls.query(context, **kwargs)
             if not record:
-                record = cls.query(context, allocated=False)
+                record = query_with_lock(
+                    cls, context).filter_by(allocated=False).first()
                 kwargs.setdefault('allocated', True)
                 record.update_record(context, record, **kwargs)
                 rollback = cls._prepare_rollback(context,

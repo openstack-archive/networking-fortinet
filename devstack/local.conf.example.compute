@@ -12,7 +12,7 @@ IP_VERSION=4
 ENABLE_TENANT_VLANS=True
 ML2_L3_PLUGIN=router_fortinet
 Q_ML2_PLUGIN_MECHANISM_DRIVERS='openvswitch,fortinet'
-Q_ML2_PLUGIN_VLAN_TYPE_OPTIONS='network_vlan_ranges=physnet1:1009:2999'
+Q_ML2_PLUGIN_VLAN_TYPE_OPTIONS='network_vlan_ranges=physnet1:1009:1099'
 Q_ML2_PLUGIN_TYPE_DRIVERS=local,flat,vlan,gre,vxlan
 Q_ML2_TENANT_NETWORK_TYPE=vlan
 # CHANGEME: The interface for tenant traffic
@@ -21,16 +21,6 @@ Q_FORTINET_TENANT_INTERFACE=eth2
 PROVIDER_NETWORK_TYPE=vlan
 PHYSICAL_NETWORK=physnet1
 OVS_PHYSICAL_BRIDGE=br-${Q_FORTINET_TENANT_INTERFACE}
-
-# fortigate ml2 plugin parameters
-# CHANGEME: ip address of the fortigate rest API
-Q_FORTINET_PLUGIN_FG_IP=192.168.121.187
-# CHANGEME: interface for tenant traffic
-Q_FORTINET_PLUGIN_FG_INT_INF=port2
-# CHANGEME: interface for external traffic
-Q_FORTINET_PLUGIN_FG_EXT_INF=port3
-# CHANGEME: if use fortivm set to False, True if hardware npu available
-Q_FORTINET_PLUGIN_NPU_AVAILABLE=False
 
 # generic configuration parameters
 DATABASE_PASSWORD=secretsecret
@@ -53,8 +43,9 @@ HOST_IP_IFACE=eth1
 # logging configuration parameters
 
 LOGFILE=/opt/stack/logs/stack.sh.log
-VERBOSE=True
-LOG_COLOR=True
+VERBOSE=False
+ENABLE_DEBUG_LOG_LEVEL=False
+LOG_COLOR=False
 SCREEN_LOGDIR=/opt/stack/logs
 
 
@@ -68,4 +59,3 @@ SERVICE_HOST=manager
 MYSQL_HOST=$SERVICE_HOST
 RABBIT_HOST=$SERVICE_HOST
 GLANCE_HOST=$SERVICE_HOST
-
