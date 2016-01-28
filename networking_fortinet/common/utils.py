@@ -59,8 +59,8 @@ def check(obj, context, vdom, resource=resources.VlanInterface):
         except exception.ResourceNotFound as e:
             import inspect
             caller = inspect.stack()[1][3]
-            LOG.debug("#### Check vlink interface failed on the %(func)s.",
-                      {'func': caller})
+            LOG.debug("## Check vlink interface failed on the %(func)s.",
+            {'func': caller})
             resources.Exinfo(e)
 
 
@@ -82,6 +82,18 @@ def getid(context):
     return id
 
 
+def port_range(range):
+    """
+    :param range:  openstack port range format '200: 300'
+    :return: fortigate port range format: '100-200'
+    e.g. tcp-portrange 100-200:300-400
+    """
+    if range:
+        return '-'.join(range.split(': '))
+    else:
+        return '1:65535'
+
+
 def get_mac(obj, context, interface=None):
     if not interface:
         interface = obj._fortigate['int_interface']
@@ -101,6 +113,15 @@ def get_ipaddr(ip_subnet, place=1):
 
 def get_netmask(ip_subnet):
     return str(netaddr.IPNetwork(ip_subnet).netmask)
+
+
+def get_subnet(ip_subnet):
+    """
+    :param ip_subnet:  input '192.168.138.0/24'
+    :return: '192.168.138.0 255.255.255.0'
+    """
+    cidr = netaddr.IPNetwork(ip_subnet)
+    return ' '.join([str(cidr.network), str(cidr.netmask)])
 
 
 def get_segmentation_id(context, network_id):
@@ -139,30 +160,40 @@ def add_by_keys(obj, context, cls, resource, *keys, **kwargs):
 
 def delete_by_keys(obj, context, cls, resource, *keys, **kwargs):
     record = fortinet_db.query_record(context, cls, **kwargs)
-    delete_resource_with_keys(obj, context, record, resource, *keys)
+    delete_resource_with_keys(obj, context, record, resource, *keys, **kwargs)
     return fortinet_db.delete_record(context, cls, **kwargs)
 
 
 def add_resource_with_keys(obj, context, record, resource, *keys, **kwargs):
     if record:
-        try:
-            params = {key: getattr(record, key, None) for key in keys
-                      if getattr(record, key, None)}
-            op(obj, context, resource.get, **params)
-        except exception.ResourceNotFound:
-            op(obj, context, resource.add, **kwargs)
+        params = {key: getattr(record, key, None) for key in keys
+                  if getattr(record, key, None)}
+    else:
+        LOG.debug("add_resource_with_keys() called, record is None, "
+                  "resource=%(res)s, kwargs=%(kwargs)s",
+                  {'res': resource, 'kwargs': kwargs})
+        params = {key: kwargs.get(key, None) for key in keys if key in kwargs}
+    try:
+        op(obj, context, resource.get, **params)
+    except exception.ResourceNotFound:
+        op(obj, context, resource.add, **kwargs)
 
 
-def delete_resource_with_keys(obj, context, record, resource, *keys):
+def delete_resource_with_keys(obj, context, record, resource, *keys, **kwargs):
     if record:
-        try:
-            params = {key: getattr(record, key, None) for key in keys
-                      if getattr(record, key, None)}
-            op(obj, context, resource.get, **params)
-            op(obj, context, resource.delete, **params)
-        except exception.ResourceNotFound as e:
-            resources.Exinfo(e)
-            pass
+        params = {key: getattr(record, key, None) for key in keys
+                  if getattr(record, key, None)}
+    else:
+        LOG.debug("delete_resource_with_keys() called, record is None, "
+                  "resource=%(res)s, kwargs=%(kwargs)s",
+                  {'res': resource, 'kwargs': kwargs})
+        params = {key: kwargs.get(key, None) for key in keys if key in kwargs}
+    try:
+        op(obj, context, resource.get, **params)
+        op(obj, context, resource.delete, **params)
+    except exception.ResourceNotFound as e:
+        resources.Exinfo(e)
+        pass
 
 
 def add_resource_with_name(obj, context, record, resource, **kwargs):
@@ -170,9 +201,9 @@ def add_resource_with_name(obj, context, record, resource, **kwargs):
                                   'vdom', 'name', **kwargs)
 
 
-def delete_resource_with_name(obj, context, record, resource):
+def delete_resource_with_name(obj, context, record, resource, **kwargs):
     return delete_resource_with_keys(obj, context, record, resource,
-                                     'vdom', 'name')
+                                     'vdom', 'name', **kwargs)
 
 
 def add_resource_with_id(obj, context, record, resource, **kwargs):
@@ -417,6 +448,16 @@ def delete_fwippool(obj, context, **kwargs):
                           fortinet_db.Fortinet_Firewall_IPPool,
                           resources.FirewallIppool,
                           **kwargs)
+
+
+def add_fwservice(obj, context, **kwargs):
+    return add_resource_with_name(
+        obj, context, None, resources.FirewallService, **kwargs)
+
+
+def delete_fwservice(obj, context, **kwargs):
+    return delete_resource_with_name(
+        obj, context, None, resources.FirewallService, **kwargs)
 
 
 def add_fwpolicy(obj, context, **kwargs):

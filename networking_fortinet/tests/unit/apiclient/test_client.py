@@ -26,8 +26,11 @@ E_R_CLS = request.GenericRequestEventlet.__name__
 class ClientTestCase(unittest2.TestCase):
     def setUp(self):
         super(ClientTestCase, self).setUp()
+        self.api = [("foobar", 443, True)]
+        self.user = "admin"
+        self.password = ""
         self.client = client.FortiosApiClient(
-            [('foobar', '80', False)], 'admin', '')
+            self.api, self.user, self.password)
         self.message = {
                     "name": "ext_4093",
                     "vlanid": 4093,

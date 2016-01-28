@@ -95,12 +95,12 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
         if not router.get('router', None):
             return
         tenant_id = router['router']['tenant_id']
+        if fortinet_db.query_count(context, l3_db.Router,
+                                   tenant_id=tenant_id):
+            raise Exception(_("FortinetL3ServicePlugin:create_router "
+                              "Only support one router per tenant"))
         with context.session.begin(subtransactions=True):
             try:
-                if fortinet_db.query_count(context, l3_db.Router,
-                                           tenant_id=tenant_id):
-                    raise Exception(_("FortinetL3ServicePlugin:create_router "
-                                      "Only support one router per tenant"))
                 namespace = utils.add_vdom(self, context, tenant_id=tenant_id)
                 utils.add_vlink(self, context, namespace.vdom)
             except Exception as e:

@@ -21,7 +21,9 @@ PREFIX = {
     'vint': '_0',
     'vext': '_1',
     'vdlink': '_',
-    'addrgrp': 'addrgrp_'
+    'addrgrp': 'addrgrp_',
+    'source_ip_address': 'src_',
+    'destination_ip_address': 'dst_'
 }
 
 POSTFIX = {

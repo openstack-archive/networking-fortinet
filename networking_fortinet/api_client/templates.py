@@ -84,7 +84,6 @@ SET_VLAN_INTERFACE = """
     "path": "/api/v2/cmdb/system/interface/{{ name }}",
     "method": "PUT",
     "body": {
-        "name": "interface",
         "json": {
             {% if ip is defined and ip != None %}
                 "ip": "{{ ip }}",
@@ -447,12 +446,20 @@ ADD_FIREWALL_POLICY = """
         "json": {
             "srcintf": [
                 {
-                    "name": "{{ srcintf }}"
+                    {% if srcintf is defined %}
+                        "name": "{{ srcintf }}"
+                    {% else %}
+                        "name": "any"
+                    {% endif %}
                 }
             ],
             "dstintf": [
                 {
-                    "name": "{{ dstintf }}"
+                    {% if dstintf is defined %}
+                        "name": "{{ dstintf }}"
+                    {% else %}
+                        "name": "any"
+                    {% endif %}
                 }
             ],
             "srcaddr":  [
@@ -473,7 +480,11 @@ ADD_FIREWALL_POLICY = """
                     {% endif %}
                 }
             ],
-            "action": "accept",
+            {% if action is defined %}
+                "action": "{{ action }}",
+            {% else %}
+                "action": "accept",
+            {% endif %}
             "schedule": "always",
             {% if nat is defined %}
             "nat": "{{ nat }}",
@@ -487,8 +498,17 @@ ADD_FIREWALL_POLICY = """
                     "name":"{{ poolname }}"
                 }],
             {% endif %}
+            {% if status is defined %}
+                "status":"{{ status }}",
+            {% else %}
+                "status":"enable",
+            {% endif %}
             "service":  [{
-                "name": "ALL"
+                {% if service is defined %}
+                    "name": "{{ service }}"
+                {% else %}
+                    "name": "ALL"
+                {% endif %}
             }]
         }
     }
@@ -823,6 +843,82 @@ GET_FIREWALL_ADDRGRP = """
             "path": "/api/v2/cmdb/firewall/addrgrp/?vdom={{ vdom }}",
         {% else %}
             "path": "/api/v2/cmdb/firewall/addrgrp/",
+        {% endif %}
+    {% endif %}
+    "method": "GET"
+}
+"""
+
+## firewall service custom
+ADD_FIREWALL_SERVICE = """
+{
+    "path": "/api/v2/cmdb/firewall.service/custom/",
+    "method": "POST",
+    "body": {
+        {% if vdom is defined %}
+            "vdom": "{{ vdom }}",
+        {% else %}
+            "vdom": "root",
+        {% endif %}
+        "name": "custom",
+        "json": {
+            {% if fqdn is defined %}
+                "protocol": {{ protocol }},
+            {% else %}
+                "protocol": "TCP/UDP/SCTP",
+            {% endif %}
+            {% if fqdn is defined %}
+                "fqdn": "{{ fqdn }}",
+            {% endif %}
+            {% if iprange is defined %}
+                "iprange": "{{ iprange }}",
+            {% endif %}
+            {% if tcp_portrange is defined %}
+                "tcp-portrange": "{{ tcp_portrange }}",
+            {% endif %}
+            {% if udp_portrange is defined %}
+                "udp-portrange": "{{ udp_portrange }}",
+            {% endif %}
+            {% if sctp_portrange is defined %}
+                "sctp-portrange": "{{ udp_portrange }}",
+            {% endif %}
+            {% if comment is defined %}
+                "comment": "{{ comment }}",
+            {% endif %}
+            "name": "{{ name }}"
+        }
+    }
+}
+"""
+
+DELETE_FIREWALL_SERVICE = """
+{
+    "path":"/api/v2/cmdb/firewall.service/custom/{{ name }}",
+    "method": "DELETE",
+    "body": {
+        {% if vdom is defined %}
+            "vdom": "{{ vdom }}",
+        {% else %}
+            "vdom": "root",
+        {% endif %}
+        "name": "custom"
+    }
+}
+"""
+
+GET_FIREWALL_SERVICE = """
+{
+    {% if name is defined %}
+        {% if vdom is defined %}
+            "path": "/api/v2/cmdb/firewall.service/custom/{{ name }}/?vdom={{ vdom }}",
+        {% else %}
+            "path": "/api/v2/cmdb/firewall.service/custom/{{ name }}/",
+        {% endif %}
+    {% else %}
+        {% if vdom is defined %}
+            "path": "/api/v2/cmdb/firewall.service/custom/?vdom={{ vdom }}",
+        {% else %}
+            "path": "/api/v2/cmdb/firewall.service/custom/",
         {% endif %}
     {% endif %}
     "method": "GET"

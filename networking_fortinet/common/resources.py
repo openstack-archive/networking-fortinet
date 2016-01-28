@@ -12,17 +12,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from networking_fortinet.api_client import exception as api_ex
-from networking_fortinet.common import constants as const
-
-from neutron.i18n import _LE
 import os
 import re
+import six
 import sys
 import types
 
+from networking_fortinet.api_client import exception as api_ex
+from networking_fortinet.common import constants as const
+from neutron.i18n import _LE
 from oslo_log import log as logging
-import six
 
 
 # For debug purpose
@@ -218,6 +217,11 @@ class FirewallAddress(Base):
 class FirewallAddrgrp(Base):
     def __init__(self):
         super(FirewallAddrgrp, self).__init__()
+
+
+class FirewallService(Base):
+    def __init__(self):
+        super(FirewallService, self).__init__()
 
 
 class DhcpServer(Base):

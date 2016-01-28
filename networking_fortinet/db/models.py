@@ -397,17 +397,20 @@ class Fortinet_Vdom_Vlink(model_base.BASEV2, DBbase):
         return super(Fortinet_Vdom_Vlink, cls).add_record(context, **kwargs)
 
 
-class Fortinet_Firewall_Policy(model_base.BASEV2, DBbase):
+class Fortinet_Firewall_Policy(model_base.BASEV2, models_v2.HasId, DBbase):
     """Schema for Fortinet firewall policy."""
     __tablename__ = 'fortinet_firewall_policies'
-    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
+    #id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
     vdom = sa.Column(sa.String(11))
     srcintf = sa.Column(sa.String(11))
     dstintf = sa.Column(sa.String(11))
-    srcaddr = sa.Column(sa.String(32), default="all")
-    dstaddr = sa.Column(sa.String(32), default="all")
+    srcaddr = sa.Column(sa.String(40), default="all")
+    dstaddr = sa.Column(sa.String(40), default="all")
     poolname = sa.Column(sa.String(32), default=None)
     nat = sa.Column(sa.String(7), default="disable")
+    action = sa.Column(sa.String(11), default="accept")
+    service = sa.Column(sa.String(36), default="ALL")
+    status = sa.Column(sa.String(7), default="enable")
     edit_id = sa.Column(sa.Integer)
 
 
@@ -494,11 +497,18 @@ class Fortinet_Firewall_IPPool(model_base.BASEV2, DBbase):
 
 class Fortinet_Firewall_Address(model_base.BASEV2, DBbase):
     __tablename__ = 'fortinet_firewall_addresses'
-    name = sa.Column(sa.String(36), primary_key=True)
+    name = sa.Column(sa.String(40), primary_key=True)
     vdom = sa.Column(sa.String(11), primary_key=True)
     subnet = sa.Column(sa.String(32))
     associated_interface = sa.Column(sa.String(11), default=None)
     group = sa.Column(sa.String(32), default=None)
+
+
+class Fortinet_Firewall_Service(model_base.BASEV2, DBbase):
+    #__tablename__ = 'fortinet_firewall_services'
+    # service name <- firewall_rule id
+    name = sa.Column(sa.String(36), primary_key=True)
+    vdom = sa.Column(sa.String(11), primary_key=True)
 
 
 class Fortinet_Interface(model_base.BASEV2, DBbase):
