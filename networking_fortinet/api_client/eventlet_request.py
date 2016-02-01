@@ -18,13 +18,12 @@ try:
     import httplib
 except ImportError:
     import http.client as httplib
-from neutron.i18n import _LI
-from neutron.i18n import _LW
 
 import eventlet
 from oslo_log import log as logging
 from oslo_serialization import jsonutils
 
+from networking_fortinet._i18n import _LI, _LW
 from networking_fortinet.api_client import request
 from networking_fortinet.api_client import templates
 

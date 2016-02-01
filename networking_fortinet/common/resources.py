@@ -12,16 +12,17 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from networking_fortinet._i18n import _LE
+from networking_fortinet.api_client import exception as api_ex
+from networking_fortinet.common import constants as const
+
 import os
 import re
-import six
 import sys
 import types
 
-from networking_fortinet.api_client import exception as api_ex
-from networking_fortinet.common import constants as const
-from neutron.i18n import _LE
 from oslo_log import log as logging
+import six
 
 
 # For debug purpose
@@ -44,7 +45,7 @@ class Exinfo(object):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         LOG.error(_LE("An exception of type %(exception)s occured with "
-                    "arguments %(args)s, line %(line)s, in %(file)s"),
+                  "arguments %(args)s, line %(line)s, in %(file)s"),
                   {'exception': type(exception).__name__,
                    'args': exception.args,
                    'line': exc_tb.tb_lineno,

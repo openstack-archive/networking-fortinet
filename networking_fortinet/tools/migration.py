@@ -144,7 +144,7 @@ class Fake_FortinetL3ServicePlugin(l3_fortinet.FortinetL3ServicePlugin):
     def create_floatingip(self, context, floatingip, returned_obj):
         """Create floating IP.
         """
-        LOG.debug(_("create_floatingip: floatingip=%s" % floatingip))
+        LOG.debug("create_floatingip: floatingip=%s" % floatingip)
         self._allocate_floatingip(context, returned_obj)
         if returned_obj.get('port_id', None):
             if not floatingip['floatingip'].get('fixed_ip_address', None):

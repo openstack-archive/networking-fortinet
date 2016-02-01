@@ -15,12 +15,11 @@
 #    under the License.
 #
 
-from neutron.i18n import _LE
-
 import jinja2
 from oslo_log import log as logging
 from oslo_serialization import jsonutils
 
+from networking_fortinet._i18n import _LE
 from networking_fortinet.api_client import base
 from networking_fortinet.api_client import eventlet_client
 from networking_fortinet.api_client import eventlet_request

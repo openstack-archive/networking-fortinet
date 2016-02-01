@@ -862,8 +862,8 @@ ADD_FIREWALL_SERVICE = """
         {% endif %}
         "name": "custom",
         "json": {
-            {% if fqdn is defined %}
-                "protocol": {{ protocol }},
+            {% if protocol is defined %}
+                "protocol": "{{ protocol }}",
             {% else %}
                 "protocol": "TCP/UDP/SCTP",
             {% endif %}

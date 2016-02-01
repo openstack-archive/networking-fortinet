@@ -16,7 +16,7 @@
 #
 
 
-from neutron.i18n import _
+from networking_fortinet._i18n import _
 
 
 class ApiException(Exception):
