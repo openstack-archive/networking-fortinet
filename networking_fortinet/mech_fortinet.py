@@ -27,12 +27,11 @@ from neutron.db import api as db_api
 from neutron.db import external_net_db as ext_db
 from neutron.db import models_v2
 from neutron.extensions import portbindings
-from neutron.i18n import _LE
-from neutron.i18n import _LI
 from neutron.plugins.common import constants as p_const
 from neutron.plugins.ml2.common import exceptions as ml2_exc
 from neutron.plugins.ml2 import driver_api
 
+from networking_fortinet._i18n import _LE, _LI
 from networking_fortinet.api_client import client
 from networking_fortinet.common import constants as const
 from networking_fortinet.common import resources as resources

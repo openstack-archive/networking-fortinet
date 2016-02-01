@@ -21,14 +21,12 @@ try:
 except ImportError:
     import http.client as httplib
     from http import cookies as Cookie
-from neutron.i18n import _LE
-from neutron.i18n import _LI
-from neutron.i18n import _LW
 import time
 
 from oslo_log import log as logging
 import six
 
+from networking_fortinet._i18n import _LE, _LI, _LW
 from networking_fortinet import api_client
 
 

@@ -20,7 +20,6 @@ import copy
 from oslo_db import exception as os_db_exception
 ## TODO(samsu): add log here temporarily
 from oslo_log import log as logging
-from oslo_utils import uuidutils
 import six
 import sqlalchemy as sa
 from sqlalchemy.inspection import inspect
@@ -160,7 +159,7 @@ class DBbase(object):
         """
         session = get_session(context)
         with session.begin(subtransactions=True):
-            record = cls.query_one(context, **kwargs)
+            record = cls.query_one(context, lockmode=True, **kwargs)
             if record:
                 session.delete(record)
         return record
@@ -391,13 +390,9 @@ class Fortinet_Vdom_Vlink(model_base.BASEV2, DBbase):
         return super(Fortinet_Vdom_Vlink, cls).add_record(context, **kwargs)
 
 
-class Fortinet_Firewall_Policy(model_base.BASEV2, DBbase):
+class Fortinet_Firewall_Policy(model_base.BASEV2, models_v2.HasId, DBbase):
     """Schema for Fortinet firewall policy."""
     __tablename__ = 'fortinet_firewall_policies'
-    #id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
-    id = sa.Column(sa.String(38),
-                   primary_key=True,
-                   default=uuidutils.generate_uuid)
     vdom = sa.Column(sa.String(11))
     srcintf = sa.Column(sa.String(11), default="any")
     dstintf = sa.Column(sa.String(11), default="any")
@@ -522,3 +517,15 @@ class Fortinet_Interface_subip(model_base.BASEV2, DBbase):
     ip = sa.Column(sa.String(32), primary_key=True)
     name = sa.Column(sa.String(11), default=None)
     vdom = sa.Column(sa.String(11))
+
+
+class Fortinet_FW_Rule_Association(model_base.BASEV2, DBbase):
+    fwr_id = sa.Column(sa.String(36),
+        sa.ForeignKey('firewall_rules.id', ondelete="CASCADE"),
+        primary_key=True)
+    fortinet_pid = sa.Column(sa.String(36),
+        sa.ForeignKey('fortinet_firewall_policies.id', ondelete="CASCADE"),
+        primary_key=True)
+    type = sa.Column(sa.String(36), default=None)
+    floatingip_id = sa.Column(sa.String(36),
+        sa.ForeignKey('floatingips.id', ondelete="CASCADE"), nullable=True)
