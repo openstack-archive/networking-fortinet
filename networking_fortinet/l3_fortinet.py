@@ -24,10 +24,12 @@ from oslo_utils import excutils
 from neutron.common import constants as l3_constants
 from neutron.common import exceptions as n_exc
 from neutron.db import l3_db
-from neutron.i18n import _LE
+from neutron import manager
+from neutron.plugins.common import constants as service_consts
 from neutron.plugins.ml2 import db
 from neutron.services.l3_router import l3_router_plugin as router
 
+from networking_fortinet._i18n import _LE
 from networking_fortinet.api_client import client
 from networking_fortinet.common import constants as const
 from networking_fortinet.common import resources
@@ -35,7 +37,6 @@ from networking_fortinet.common import utils
 from networking_fortinet.db import models as fortinet_db
 from networking_fortinet.tasks import constants as t_consts
 from networking_fortinet.tasks import tasks
-
 
 # TODO(samsu): the folowing two imports just for testing purpose
 # TODO(samsu): need to be deleted later
@@ -65,6 +66,7 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
         self.task_manager = tasks.TaskManager()
         self.task_manager.start()
         self.Fortinet_init()
+        self.enable_fwaas = 'fwaas_fortinet' in cfg.CONF.service_plugins
 
     def Fortinet_init(self):
         """Fortinet specific initialization for this class."""
@@ -106,8 +108,8 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
             except Exception as e:
                 LOG.error(_LE("Failed to create_router router=%(router)s"),
                           {"router": router})
+                resources.Exinfo(e)
                 utils._rollback_on_err(self, context, e)
-                raise(e)
         utils.update_status(self, context, t_consts.TaskStatus.COMPLETED)
         return super(FortinetL3ServicePlugin, self).\
             create_router(context, router)
@@ -150,7 +152,6 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                       "port=%(port)s "
                       "info=%(info)r",
                       {'context': context, 'port': port, 'info': info})
-            #self._core_plugin.update_port(context, info["port_id"], port)
             interface_info = info
             subnet = self._core_plugin._get_subnet(context,
                                                    interface_info['subnet_id'])
@@ -285,9 +286,8 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                                 l3_constants.FLOATINGIP_STATUS_ACTIVE, id=id)
             except Exception as e:
                 resources.Exinfo(e)
-                super((FortinetL3ServicePlugin, self).
-                      disassociate_floatingips(context,
-                                        floatingip['floatingip']['port_id']))
+                super((FortinetL3ServicePlugin, self).disassociate_floatingips(
+                    context, floatingip['floatingip']['port_id']))
                 raise e
         else:
             # disassociate floating ip.
@@ -345,6 +345,11 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
             utils.head_firewall_policy(self, context,
                                        vdom=db_namespace.vdom,
                                        id=db_fwpolicy.edit_id)
+
+            if self.enable_fwaas:
+                fw_plugin = manager.NeutronManager.get_service_plugins().get(
+                    service_consts.FIREWALL)
+                fw_plugin.add_fip(context, l3db_fip)
         except Exception as e:
             utils._rollback_on_err(self, context, e)
             raise e
@@ -359,6 +364,10 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                             fortinet_db.Fortinet_FloatingIP_Allocation,
                             floating_ip_address=l3db_fip.floating_ip_address,
                             allocated=True)
+        if self.enable_fwaas:
+            fw_plugin = manager.NeutronManager.get_service_plugins().get(
+                service_consts.FIREWALL)
+            fw_plugin.remove_fip(context, db_namespace.vdom, id)
         int_intf, ext_intf = utils.get_vlink_intf(self, context,
                                                vdom=db_namespace.vdom)
         db_ip = fortinet_db.query_record(context, models_v2.IPAllocation,
@@ -395,7 +404,7 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                                                     do_notify=do_notify)
 
     def _add_interface_by_subnet(self, context, router, subnet_id, owner):
-        LOG.debug("_add_interface_by_subnet: router=%(router)s, "
+        LOG.debug("_add_interface_by_subnet(): router=%(router)s, "
                   "subnet_id=%(subnet_id)s, owner=%(owner)s",
                   {'router': router, 'subnet_id': subnet_id, 'owner': owner})
         subnet = self._core_plugin._get_subnet(context, subnet_id)
@@ -473,14 +482,8 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                 int_intf, ext_intf = utils.get_vlink_intf(self, context,
                                                        vdom=db_namespace.vdom)
 
-                #utils.add_secondaryip(self, context,
-                #                      name=ext_inf,
-                #                      vdom=db_namespace.vdom,
-                #                      ip=utils.getip(db_fip.ip_subnet, 1))
-
                 utils.add_fwpolicy(self, context,
                                    vdom=const.EXT_VDOM,
-                                   srcintf=self._fortigate['ext_interface'],
                                    dstintf=ext_intf,
                                    dstaddr=db_fip.vip_name,
                                    nat='enable')
@@ -496,7 +499,6 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                                    vdom=const.EXT_VDOM,
                                    startip=db_fip.floating_ip_address)
 
-                #ipaddr = utils.get_ipaddr(db_fip.ip_subnet, 2)
                 utils.add_fwaddress(self, context,
                                     name=mappedip,
                                     vdom=const.EXT_VDOM,
@@ -589,11 +591,6 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                                   vdom=const.EXT_VDOM,
                                   dstintf=ext_intf,
                                   dstaddr=l3db_fip.floating_ip_address)
-
-            #utils.delete_secondaryip(self, context,
-            #                         name=ext_inf,
-            #                         vdom=const.EXT_VDOM,
-            #                         ip=utils.getip(db_fip.ip_subnet, 1))
 
             utils.delete_vip(self, context,
                              vdom=const.EXT_VDOM,

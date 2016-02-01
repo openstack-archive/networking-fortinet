@@ -59,7 +59,7 @@ def check(obj, context, vdom, resource=resources.VlanInterface):
             import inspect
             caller = inspect.stack()[1][3]
             LOG.debug("## Check vlink interface failed on the %(func)s.",
-            {'func': caller})
+                      {'func': caller})
             resources.Exinfo(e)
 
 
@@ -82,7 +82,7 @@ def port_range(range):
     if range:
         return '-'.join(range.split(': '))
     else:
-        return '1:65535'
+        return '1-65535'
 
 
 def get_mac(obj, context, interface=None):
@@ -442,6 +442,15 @@ def add_fwpolicy(obj, context, **kwargs):
                      **kwargs)
 
 
+def add_fwpolicy_to_head(obj, context, **kwargs):
+    fwpolicy = add_by_id(obj, context,
+                         fortinet_db.Fortinet_Firewall_Policy,
+                         resources.FirewallPolicy,
+                         **kwargs)
+    head_firewall_policy(obj, context, id=fwpolicy.edit_id, vdom=fwpolicy.vdom)
+    return fwpolicy
+
+
 def delete_fwpolicy(obj, context, **kwargs):
     return delete_by_id(obj, context,
                         fortinet_db.Fortinet_Firewall_Policy,
@@ -471,10 +480,17 @@ def head_firewall_policy(obj, context, **kwargs):
     }
     :return:
     """
-    res = op(obj, context, resources.FirewallPolicy.get, vdom=kwargs['vdom'])
-    if res.get('results'):
-        head = res['results'][0]['policyid']
-        op(obj, context, resources.FirewallPolicy.move, before=head, **kwargs)
+    if not kwargs.get('before', None) and kwargs.get('vdom', None):
+        res = op(
+            obj, context, resources.FirewallPolicy.get, vdom=kwargs['vdom'])
+        if res.get('results'):
+            head = res['results'][0]['policyid']
+            kwargs.setdefault('before', head)
+    if kwargs.get('before', None) and kwargs.get('vdom', None):
+        op(obj, context, resources.FirewallPolicy.move,
+           vdom=kwargs['vdom'],
+           id=kwargs['id'],
+           before=kwargs['before'])
 
 
 def add_vip(obj, context, **kwargs):

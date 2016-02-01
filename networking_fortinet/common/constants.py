@@ -29,8 +29,14 @@ PREFIX = {
 POSTFIX = {
     'vint': '_0',
     'vext': '_1',
-    'vdlink': '_'
+    'vdlink': '_',
+    'fip': '+'
 }
+
+# TYPE
+TYPE_EXT = 'ext2int'
+TYPE_INT = 'int2int'
+TYPE_FIP = 'ext2fip'
 
 #EXT_VDOM = 'root'
 EXT_VDOM = 'osvdmext'
