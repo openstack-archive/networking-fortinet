@@ -200,7 +200,7 @@ def upgrade():
         mysql_engine=u'InnoDB'
     )
     op.create_table('fortinet_firewall_policies',
-        sa.Column('id', mysql.VARCHAR(length=36),
+        sa.Column('id', mysql.VARCHAR(length=38),
                   server_default=sa.text(u"''"), nullable=False),
         sa.Column('vdom', mysql.VARCHAR(length=11), nullable=True),
         sa.Column('srcintf', mysql.VARCHAR(length=11), nullable=True),

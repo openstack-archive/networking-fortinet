@@ -274,8 +274,8 @@ class FortinetMechanismDriver(driver_api.MechanismDriver):
         subnet_id = mech_context.current['id']
         tenant_id = mech_context.current['tenant_id']
         context = mech_context._plugin_context
-        dns_nameservers = mech_context.current.\
-            setdefault('dns_nameservers', [])
+        dns_nameservers = mech_context.current.setdefault(
+            'dns_nameservers', [])
         if update:
             router_func = utils.set_routerstatic
             dhcp_func = utils.set_dhcpserver

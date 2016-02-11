@@ -90,7 +90,7 @@ class Fake_context(object):
             exit()
         self.session = engine.get_session(autocommit=True,
                                           expire_on_commit=False)
-        self.request_id = 'fake_migration_context'
+        self.request_id = 'migration_context'
 
 class Fake_mech_context(object):
     def __init__(self, **kwargs):

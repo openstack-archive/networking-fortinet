@@ -178,7 +178,7 @@ ADD_DHCP_SERVER = """
             "dns-server{{ loop.index }}":"{{ dns }}",
             {% endfor %}
             {% else %}
-            "dns-service":"local",
+            "dns-service":"default",
             {% endif %}
             {% if gateway != None %}
             "default-gateway":"{{ gateway }}",
@@ -213,7 +213,7 @@ SET_DHCP_SERVER = """
             "dns-server{{ loop.index }}":"{{ dns }}",
             {% endfor %}
             {% else %}
-            "dns-service":"local",
+            "dns-service":"default",
             {% endif %}
             {% if gateway != None %}
             "default-gateway":"{{ gateway }}",
