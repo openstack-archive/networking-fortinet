@@ -19,7 +19,6 @@
 import sys
 
 import netaddr
-from oslo_config import cfg
 from oslo_log import log as logging
 
 from neutron.common import constants as l3_constants
@@ -27,12 +26,13 @@ from neutron.db import api as db_api
 from neutron.db import external_net_db as ext_db
 from neutron.db import models_v2
 from neutron.extensions import portbindings
+
 from neutron.plugins.common import constants as p_const
 from neutron.plugins.ml2.common import exceptions as ml2_exc
 from neutron.plugins.ml2 import driver_api
 
 from networking_fortinet._i18n import _LE, _LI
-from networking_fortinet.api_client import client
+from networking_fortinet.common import config
 from networking_fortinet.common import constants as const
 from networking_fortinet.common import resources as resources
 from networking_fortinet.common import utils as utils
@@ -42,9 +42,6 @@ from networking_fortinet.tasks import tasks
 
 
 LOG = logging.getLogger(__name__)
-
-cfg.CONF.import_group("ml2_fortinet",
-                      "networking_fortinet.common.config")
 
 
 class FortinetMechanismDriver(driver_api.MechanismDriver):
@@ -83,25 +80,8 @@ class FortinetMechanismDriver(driver_api.MechanismDriver):
     def Fortinet_init(self):
         """Fortinet specific initialization for this class."""
         LOG.debug("FortinetMechanismDriver_init")
-        self._fortigate = {
-            'address': cfg.CONF.ml2_fortinet.address,
-            'port': cfg.CONF.ml2_fortinet.port,
-            'protocol': cfg.CONF.ml2_fortinet.protocol,
-            'username': cfg.CONF.ml2_fortinet.username,
-            'password': cfg.CONF.ml2_fortinet.password,
-            'int_interface': cfg.CONF.ml2_fortinet.int_interface,
-            'ext_interface': cfg.CONF.ml2_fortinet.ext_interface,
-            'tenant_network_type': cfg.CONF.ml2_fortinet.tenant_network_type,
-            'vlink_vlan_id_range': cfg.CONF.ml2_fortinet.vlink_vlan_id_range,
-            'vlink_ip_range': cfg.CONF.ml2_fortinet.vlink_ip_range,
-            'vip_mappedip_range': cfg.CONF.ml2_fortinet.vip_mappedip_range,
-            'npu_available': cfg.CONF.ml2_fortinet.npu_available
-        }
-
-        api_server = [(self._fortigate['address'], self._fortigate['port'],
-                      'https' == self._fortigate['protocol'])]
-        self._driver = client.FortiosApiClient(api_server,
-            self._fortigate['username'], self._fortigate['password'])
+        self._fortigate = config.fgt_info
+        self._driver = config.get_apiclient()
 
         for key in const.FORTINET_PARAMS:
             self.sync_conf_to_db(key)

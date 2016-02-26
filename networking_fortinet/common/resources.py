@@ -12,27 +12,18 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import inspect
+import os
+from oslo_log import log as logging
+import re
+import six
+import sys
+import types
+
 from networking_fortinet._i18n import _LE
 from networking_fortinet.api_client import exception as api_ex
 from networking_fortinet.common import constants as const
 
-import os
-import re
-import sys
-import types
-
-from oslo_log import log as logging
-import six
-
-
-# For debug purpose
-def funcinfo():
-    import inspect
-    cur_func = inspect.stack()[1][3]
-    caller = inspect.stack()[2][3]
-    LOG.debug("## current function is %(cur_func)s,"
-              "its caller is %(caller)s",
-              {'cur_func': cur_func, 'caller': caller})
 
 LOG = logging.getLogger(__name__)
 
@@ -40,39 +31,39 @@ OPS = ["ADD", "DELETE", "SET", "GET", "MOVE"]
 RB_FUNC = {'add': 'delete'}
 
 
+# For debug purpose
+def funcinfo(cls=None, action=None, data=None):
+    cur_func = inspect.stack()[1][3]
+    caller = inspect.stack()[2][3]
+    LOG.debug("## current function is %(cur_func)s,"
+              "its caller is %(caller)s",
+              {'cur_func': cur_func, 'caller': caller})
+    if cls or action or data:
+        LOG.debug("## cls: %(cls)s, action: %(action)s, data: %(data)s",
+                  {'cls': cls.__name__, 'action': action, 'data': data})
+
+
+def rollback(func):
+    def wrapper(cls, *args):
+        result = func(cls, *args)
+        if not result:
+            rollback = {}
+        else:
+            rollback = cls._prepare_rollback(cls.delete, *args, **result)
+        return {'result': result, 'rollback': rollback}
+    return wrapper
+
+
 class Exinfo(object):
     def __init__(self, exception):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         LOG.error(_LE("An exception of type %(exception)s occured with "
-                  "arguments %(args)s, line %(line)s, in %(file)s"),
+                      "arguments %(args)s, line %(line)s, in %(file)s"),
                   {'exception': type(exception).__name__,
                    'args': exception.args,
                    'line': exc_tb.tb_lineno,
                    'file': fname})
-
-
-class Null(object):
-    def __init__(self, *args, **kwargs):
-        return None
-
-    def __call__(self, *args, **kwargs):
-        return self
-
-    def __getattr__(self, mname):
-        return self
-
-    def __setattr__(self, name, value):
-        return self
-
-    def __delattr__(self, name):
-        return self
-
-    def __repr__(self):
-        return "<Null>"
-
-    def __str__(self):
-        return "Null"
 
 
 class DefaultClassMethods(type):
@@ -87,17 +78,6 @@ class DefaultClassMethods(type):
             def _defaultClassMethod(cls, client, data):
                 return cls.element(client, attr, data)
         return types.MethodType(_defaultClassMethod, cls)
-
-
-def rollback(func):
-    def wrapper(cls, *args):
-        result = func(cls, *args)
-        if not result:
-            rollback = {}
-        else:
-            rollback = cls._prepare_rollback(cls.delete, *args, **result)
-        return {'result': result, 'rollback': rollback}
-    return wrapper
 
 
 @six.add_metaclass(DefaultClassMethods)
@@ -132,7 +112,7 @@ class Base(object):
 
     @classmethod
     def element(cls, client, action, data):
-        funcinfo()
+        funcinfo(cls=cls, action=action, data=data)
         if not data:
             data = getattr(cls, 'data', None)
         # op is the combination of action and resource class name,
@@ -145,11 +125,6 @@ class Base(object):
             Exinfo(e)
             raise e
 
-
-#############################################################
-
-
-#############################################################
 
 class Vdom(Base):
     def __init__(self):

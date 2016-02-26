@@ -495,13 +495,18 @@ ADD_FIREWALL_POLICY = """
                 {% endif %}
                 "ippool": "enable",
                 "poolname":[{
-                    "name":"{{ poolname }}"
+                    "name": "{{ poolname }}"
                 }],
             {% endif %}
-            {% if status is defined %}
-                "status":"{{ status }}",
+            {% if match_vip is defined %}
+                "match-vip": "{{ match_vip }}",
             {% else %}
-                "status":"enable",
+                "match-vip": "disable",
+            {% endif %}
+            {% if status is defined %}
+                "status": "{{ status }}",
+            {% else %}
+                "status": "enable",
             {% endif %}
             "service":  [{
                 {% if service is defined %}
@@ -509,7 +514,86 @@ ADD_FIREWALL_POLICY = """
                 {% else %}
                     "name": "ALL"
                 {% endif %}
-            }]
+            }],
+            {% if comments is defined %}
+                "comments": "{{ comments }}"
+            {% else %}
+                "comments": ""
+            {% endif %}
+        }
+    }
+}
+"""
+
+SET_FIREWALL_POLICY = """
+{
+    "path": "/api/v2/cmdb/firewall/policy/{{ id }}/",
+    "method": "PUT",
+    "body": {
+        {% if vdom is defined %}
+            "vdom": "{{ vdom }}",
+        {% else %}
+            "vdom": "root",
+        {% endif %}
+        "json": {
+            {% if srcintf is defined %}
+                "srcintf": [
+                    {
+                        "name": "{{ srcintf }}"
+                    }
+                ],
+            {% endif %}
+            {% if dstintf is defined %}
+                "dstintf": [
+                    {
+                        "name": "{{ dstintf }}"
+                    }
+                ],
+            {% endif %}
+            {% if srcaddr is defined %}
+                "srcaddr":  [
+                    {
+                        "name": "{{ srcaddr }}"
+                    }
+                ],
+            {% endif %}
+            {% if dstaddr is defined %}
+                "dstaddr":  [
+                    {
+                        "name": "{{ dstaddr }}"
+                    }
+                ],
+            {% endif %}
+            {% if action is defined %}
+                "action": "{{ action }}",
+            {% endif %}
+            {% if nat is defined %}
+            "nat": "{{ nat }}",
+            {% endif %}
+            {% if poolname is defined %}
+                {% if nat is not defined %}
+                    "nat": "enable",
+                {% endif %}
+                "ippool": "enable",
+                "poolname":[{
+                    "name":"{{ poolname }}"
+                }],
+            {% endif %}
+            {% if match_vip is defined %}
+                "match-vip":"{{ match_vip }}",
+            {% endif %}
+            {% if status is defined %}
+                "status":"{{ status }}",
+            {% endif %}
+            {% if service is defined %}
+                "service":  [{
+                    "name": "{{ service }}"
+                }],
+            {% endif %}
+            {% if comments is defined %}
+                "comments": "{{ comments }}",
+            {% endif %}
+            "schedule": "always"
         }
     }
 }
@@ -718,8 +802,35 @@ ADD_FIREWALL_ADDRESS = """
             {% if comment is defined %}
                 "comment": "{{ comment }}",
             {% endif %}
-            "name": "{{ name }}",
-            "subnet": "{{ subnet }}"
+            "subnet": "{{ subnet }}",
+            "name": "{{ name }}"
+        }
+    }
+}
+"""
+
+SET_FIREWALL_ADDRESS = """
+{
+    "path":"/api/v2/cmdb/firewall/address/{{ name }}",
+    "method": "PUT",
+    "body": {
+        {% if vdom is defined %}
+            "vdom": "{{ vdom }}",
+        {% else %}
+            "vdom": "root",
+        {% endif %}
+        "name": "address",
+        "json": {
+            {% if associated_interface is defined %}
+                "associated-interface": "{{ associated_interface }}",
+            {% endif %}
+            {% if comment is defined %}
+                "comment": "{{ comment }}",
+            {% endif %}
+            {% if subnet is defined %}
+                "subnet": "{{ subnet }}",
+            {% endif %}
+            "name": "{{ name }}"
         }
     }
 }
@@ -881,6 +992,46 @@ ADD_FIREWALL_SERVICE = """
             {% endif %}
             {% if sctp_portrange is defined %}
                 "sctp-portrange": "{{ udp_portrange }}",
+            {% endif %}
+            {% if comment is defined %}
+                "comment": "{{ comment }}",
+            {% endif %}
+            "name": "{{ name }}"
+        }
+    }
+}
+"""
+
+## update firewall service custom
+SET_FIREWALL_SERVICE = """
+{
+    "path": "/api/v2/cmdb/firewall.service/custom/{{ name }}",
+    "method": "PUT",
+    "body": {
+        {% if vdom is defined %}
+            "vdom": "{{ vdom }}",
+        {% else %}
+            "vdom": "root",
+        {% endif %}
+        "name": "custom",
+        "json": {
+            {% if protocol is defined %}
+                "protocol": "{{ protocol }}",
+            {% endif %}
+            {% if fqdn is defined %}
+                "fqdn": "{{ fqdn }}",
+            {% endif %}
+            {% if iprange is defined %}
+                "iprange": "{{ iprange }}",
+            {% endif %}
+            {% if tcp_portrange is defined %}
+                "tcp-portrange": "{{ tcp_portrange }}",
+            {% endif %}
+            {% if udp_portrange is defined %}
+                "udp-portrange": "{{ udp_portrange }}",
+            {% endif %}
+            {% if sctp_portrange is defined %}
+                "sctp-portrange": "{{ sctp_portrange }}",
             {% endif %}
             {% if comment is defined %}
                 "comment": "{{ comment }}",
