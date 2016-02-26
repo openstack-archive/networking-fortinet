@@ -13,8 +13,9 @@
 #    under the License.
 
 from neutron.agent.common import config
-
 from oslo_config import cfg
+
+from networking_fortinet.api_client import client
 
 ML2_FORTINET = [
     cfg.StrOpt('address', default='',
@@ -49,3 +50,26 @@ ML2_FORTINET = [
 cfg.CONF.register_opts(ML2_FORTINET, "ml2_fortinet")
 config.register_agent_state_opts_helper(cfg.CONF)
 config.register_root_helper(cfg.CONF)
+
+fgt_info = {
+    'address': cfg.CONF.ml2_fortinet.address,
+    'port': cfg.CONF.ml2_fortinet.port,
+    'protocol': cfg.CONF.ml2_fortinet.protocol,
+    'username': cfg.CONF.ml2_fortinet.username,
+    'password': cfg.CONF.ml2_fortinet.password,
+    'int_interface': cfg.CONF.ml2_fortinet.int_interface,
+    'ext_interface': cfg.CONF.ml2_fortinet.ext_interface,
+    'tenant_network_type': cfg.CONF.ml2_fortinet.tenant_network_type,
+    'vlink_vlan_id_range': cfg.CONF.ml2_fortinet.vlink_vlan_id_range,
+    'vlink_ip_range': cfg.CONF.ml2_fortinet.vlink_ip_range,
+    'vip_mappedip_range': cfg.CONF.ml2_fortinet.vip_mappedip_range,
+    'npu_available': cfg.CONF.ml2_fortinet.npu_available
+}
+
+
+def get_apiclient():
+    """Fortinet api client initialization."""
+    api_server = [(fgt_info['address'], fgt_info['port'],
+                  'https' == fgt_info['protocol'])]
+    return client.FortiosApiClient(
+        api_server, fgt_info['username'], fgt_info['password'])

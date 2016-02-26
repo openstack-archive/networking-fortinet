@@ -17,17 +17,16 @@
 """Fortinet specific database schema/model."""
 
 import copy
+from neutron.db import model_base
+from neutron.db import models_v2
 from oslo_db import exception as os_db_exception
-## TODO(samsu): add log here temporarily
 from oslo_log import log as logging
 import six
 import sqlalchemy as sa
 from sqlalchemy.inspection import inspect
+from sqlalchemy import orm
 
 from networking_fortinet.common import constants as const
-
-from neutron.db import model_base
-from neutron.db import models_v2
 
 
 LOG = logging.getLogger(__name__)
@@ -52,10 +51,11 @@ def update_record(context, record, **kwargs):
     session = get_session(context)
     try:
         for key, value in six.iteritems(kwargs):
-            if hasattr(record, key):
+            if getattr(record, key, None) != value:
                 setattr(record, key, value)
         with session.begin(subtransactions=True):
             session.add(record)
+            return record
     except Exception as e:
         raise os_db_exception.DBError(e)
 
@@ -402,7 +402,10 @@ class Fortinet_Firewall_Policy(model_base.BASEV2, models_v2.HasId, DBbase):
     nat = sa.Column(sa.String(7), default="disable")
     action = sa.Column(sa.String(11), default="accept")
     service = sa.Column(sa.String(36), default="ALL")
+    match_vip = sa.Column(sa.String(7), default="disable")
     status = sa.Column(sa.String(7), default="enable")
+    # comments(max 1023 in fortigate) to save firewall rule name (max 255)
+    comments = sa.Column(sa.String(255), default=None)
     edit_id = sa.Column(sa.Integer)
 
 
@@ -529,3 +532,5 @@ class Fortinet_FW_Rule_Association(model_base.BASEV2, DBbase):
     type = sa.Column(sa.String(36), default=None)
     floatingip_id = sa.Column(sa.String(36),
         sa.ForeignKey('floatingips.id', ondelete="CASCADE"), nullable=True)
+    fortinet_policy = orm.relationship(
+        "Fortinet_Firewall_Policy", backref='fortinet_fw_rule_association')

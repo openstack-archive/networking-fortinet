@@ -13,13 +13,12 @@
 #    under the License.
 
 import mock
+from neutron.tests import base
 from oslo_config import cfg
 from oslo_db.sqlalchemy import session
 import six
 
-from neutron.tests import base
-
-from networking_fortinet import mech_fortinet
+from networking_fortinet.ml2 import mech_fortinet
 from networking_fortinet.tests.unit import (
     test_fortinet_common as mocked)
 

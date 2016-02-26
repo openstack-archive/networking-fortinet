@@ -29,6 +29,10 @@ Q_FORTINET_PLUGIN_FG_INT_INF=port2
 Q_FORTINET_PLUGIN_FG_EXT_INF=port3
 # CHANGEME: if use fortivm set to False, True if hardware npu available
 Q_FORTINET_PLUGIN_NPU_AVAILABLE=False
+# CHANGEME: fortigate username
+Q_FORTINET_PLUGIN_FG_USERNAME=admin
+# CHANGEME: fortigate password
+Q_FORTINET_PLUGIN_FG_PASSWORD=''
 
 # generic configuration parameters
 # CHANGEME: if needed

@@ -80,7 +80,7 @@ def port_range(range):
     e.g. tcp-portrange 100-200:300-400
     """
     if range:
-        return '-'.join(range.split(': '))
+        return '-'.join([p.strip() for p in range.split(':')])
     else:
         return '1-65535'
 
@@ -143,9 +143,34 @@ def _rollback_on_err(obj, context, err):
     resources.Exinfo(err)
 
 
+def _prepare_params(record, resource, *keys, **kwargs):
+    if record:
+        params = {key: getattr(record, key, None) for key in keys
+                  if getattr(record, key, None)}
+        #if 'id' in keys:
+        #    params.setdefault('id', getattr(record, 'edit_id', None))
+    else:
+        LOG.debug("_prepare_params() called, record is None, "
+                  "resource=%(res)s, kwargs=%(kwargs)s",
+                  {'res': resource, 'kwargs': kwargs})
+        params = {key: kwargs.get(key, None) for key in keys if key in kwargs}
+    return params
+
+
 def add_by_keys(obj, context, cls, resource, *keys, **kwargs):
     record = add_record(obj, context, cls, **kwargs)
     add_resource_with_keys(obj, context, record, resource, *keys, **kwargs)
+    return record
+
+
+def set_by_keys(obj, context, cls, resource, *keys, **kwargs):
+    params = _prepare_params(None, resource, *keys, **kwargs)
+    record = fortinet_db.query_record(context, cls, **params)
+    if record:
+        record = cls.update_record(context, record, **kwargs)
+        set_resource_with_keys(obj, context, record, resource, *keys, **kwargs)
+    else:
+        record = add_by_keys(obj, context, cls, resource, *keys, **kwargs)
     return record
 
 
@@ -156,39 +181,45 @@ def delete_by_keys(obj, context, cls, resource, *keys, **kwargs):
 
 
 def add_resource_with_keys(obj, context, record, resource, *keys, **kwargs):
-    if record:
-        params = {key: getattr(record, key, None) for key in keys
-                  if getattr(record, key, None)}
-    else:
-        LOG.debug("add_resource_with_keys() called, record is None, "
-                  "resource=%(res)s, kwargs=%(kwargs)s",
-                  {'res': resource, 'kwargs': kwargs})
-        params = {key: kwargs.get(key, None) for key in keys if key in kwargs}
+    params = _prepare_params(record, resource, *keys, **kwargs)
     try:
         op(obj, context, resource.get, **params)
     except exception.ResourceNotFound:
-        op(obj, context, resource.add, **kwargs)
+        return op(obj, context, resource.add, **kwargs)
+    return None
+
+
+def set_resource_with_keys(obj, context, record, resource, *keys, **kwargs):
+    params = _prepare_params(record, resource, *keys, **kwargs)
+    try:
+        op(obj, context, resource.get, **params)
+        for key in keys:
+            kwargs.setdefault(key, params[key])
+        return op(obj, context, resource.set, **kwargs)
+    except exception.ResourceNotFound:
+        LOG.debug("The resource %(rs)s with fields %(kws)s "
+                  "is not exist, create a new one instead",
+                  {"rs": resource, 'kws': kwargs})
+        return op(obj, context, resource.add, **kwargs)
 
 
 def delete_resource_with_keys(obj, context, record, resource, *keys, **kwargs):
-    if record:
-        params = {key: getattr(record, key, None) for key in keys
-                  if getattr(record, key, None)}
-    else:
-        LOG.debug("delete_resource_with_keys() called, record is None, "
-                  "resource=%(res)s, kwargs=%(kwargs)s",
-                  {'res': resource, 'kwargs': kwargs})
-        params = {key: kwargs.get(key, None) for key in keys if key in kwargs}
+    params = _prepare_params(record, resource, *keys, **kwargs)
     try:
         op(obj, context, resource.get, **params)
-        op(obj, context, resource.delete, **params)
+        return op(obj, context, resource.delete, **params)
     except exception.ResourceNotFound as e:
         resources.Exinfo(e)
-        pass
+    return None
 
 
 def add_resource_with_name(obj, context, record, resource, **kwargs):
     return add_resource_with_keys(obj, context, record, resource,
+                                  'vdom', 'name', **kwargs)
+
+
+def set_resource_with_name(obj, context, record, resource, **kwargs):
+    return set_resource_with_keys(obj, context, record, resource,
                                   'vdom', 'name', **kwargs)
 
 
@@ -206,25 +237,45 @@ def add_resource_with_id(obj, context, record, resource, **kwargs):
         except exception.ResourceNotFound:
             pass
     else:
-        # TODO(samsu): may add search device data later
-        res = op(obj, context, resource.get, vdom=record.vdom)
+        # TODO(samsu): may add search existing data in devices later
+        pass
     return op(obj, context, resource.add, **kwargs)
+
+
+def set_resource_with_id(obj, context, record, resource, **kwargs):
+    # because the name 'edit_id' in record is different with id in
+    # the api templates, the id related function can not reuse the
+    # related xx_keys function
+    if getattr(record, 'edit_id', None):
+        try:
+            op(obj, context, resource.get, vdom=record.vdom, id=record.edit_id)
+            if kwargs.get('id', None):
+                del kwargs['id']
+            kwargs.setdefault('id', str(record.edit_id))
+            kwargs.setdefault('vdom', record.vdom)
+            return op(obj, context, resource.set, **kwargs)
+        except Exception as e:
+            resources.Exinfo(e)
+            raise e
 
 
 def delete_resource_with_id(obj, context, record, resource):
     if getattr(record, 'edit_id', None):
         try:
             op(obj, context, resource.get, vdom=record.vdom, id=record.edit_id)
-            op(obj, context, resource.delete,
+            return op(obj, context, resource.delete,
                vdom=record.vdom, id=record.edit_id)
-            return True
         except Exception as e:
             resources.Exinfo(e)
-    return False
+    return None
 
 
 def add_by_name(obj, context, cls, resource, **kwargs):
     return add_by_keys(obj, context, cls, resource, 'vdom', 'name', **kwargs)
+
+
+def set_by_name(obj, context, cls, resource, **kwargs):
+    return set_by_keys(obj, context, cls, resource, 'vdom', 'name', **kwargs)
 
 
 def delete_by_name(obj, context, cls, resource, **kwargs):
@@ -240,10 +291,21 @@ def add_by_id(obj, context, cls, resource, **kwargs):
     return record
 
 
+def set_by_id(obj, context, cls, resource, **kwargs):
+    params = _prepare_params(None, resource, 'vdom', 'id', **kwargs)
+    record = fortinet_db.query_record(context, cls, **params)
+    if record:
+        cls.update_record(context, record, **kwargs)
+        set_resource_with_id(obj, context, record, resource, **kwargs)
+        return record
+    else:
+        return None
+
+
 def delete_by_id(obj, context, cls, resource, **kwargs):
     record = fortinet_db.query_record(context, cls, **kwargs)
     delete_resource_with_id(obj, context, record, resource)
-    fortinet_db.delete_record(context, cls, **kwargs)
+    return fortinet_db.delete_record(context, cls, **kwargs)
 
 
 def add_vdom(obj, context, **kwargs):
@@ -404,6 +466,11 @@ def add_fwaddress(obj, context, **kwargs):
                        **kwargs)
 
 
+def set_fwaddress(obj, context, **kwargs):
+    return set_by_name(obj, context, fortinet_db.Fortinet_Firewall_Address,
+                       resources.FirewallAddress, **kwargs)
+
+
 def delete_fwaddress(obj, context, **kwargs):
     return delete_by_name(obj, context,
                           fortinet_db.Fortinet_Firewall_Address,
@@ -430,6 +497,11 @@ def add_fwservice(obj, context, **kwargs):
         obj, context, None, resources.FirewallService, **kwargs)
 
 
+def set_fwservice(obj, context, **kwargs):
+    return set_resource_with_name(
+        obj, context, None, resources.FirewallService, **kwargs)
+
+
 def delete_fwservice(obj, context, **kwargs):
     return delete_resource_with_name(
         obj, context, None, resources.FirewallService, **kwargs)
@@ -443,12 +515,16 @@ def add_fwpolicy(obj, context, **kwargs):
 
 
 def add_fwpolicy_to_head(obj, context, **kwargs):
-    fwpolicy = add_by_id(obj, context,
-                         fortinet_db.Fortinet_Firewall_Policy,
-                         resources.FirewallPolicy,
-                         **kwargs)
+    fwpolicy = add_fwpolicy(obj, context, **kwargs)
     head_firewall_policy(obj, context, id=fwpolicy.edit_id, vdom=fwpolicy.vdom)
     return fwpolicy
+
+
+def set_fwpolicy(obj, context, **kwargs):
+    return set_by_id(obj, context,
+                     fortinet_db.Fortinet_Firewall_Policy,
+                     resources.FirewallPolicy,
+                     **kwargs)
 
 
 def delete_fwpolicy(obj, context, **kwargs):
@@ -480,31 +556,48 @@ def head_firewall_policy(obj, context, **kwargs):
     }
     :return:
     """
-    if not kwargs.get('before', None) and kwargs.get('vdom', None):
+    if 'before' not in kwargs and 'after' not in kwargs and 'vdom' in kwargs:
         res = op(
             obj, context, resources.FirewallPolicy.get, vdom=kwargs['vdom'])
         if res.get('results'):
             head = res['results'][0]['policyid']
             kwargs.setdefault('before', head)
-    if kwargs.get('before', None) and kwargs.get('vdom', None):
+    if 'before' in kwargs and 'vdom' in kwargs:
         op(obj, context, resources.FirewallPolicy.move,
            vdom=kwargs['vdom'],
            id=kwargs['id'],
            before=kwargs['before'])
+    elif 'after' in kwargs and 'vdom' in kwargs:
+        op(obj, context, resources.FirewallPolicy.move,
+           vdom=kwargs['vdom'],
+           id=kwargs['id'],
+           after=kwargs['after'])
+
+
+def add_fwaas_subpolicy(obj, context, **kwargs):
+    fwr_ass = {}
+    for key in ['fwr_id', 'type']:
+        fwr_ass.setdefault(key, kwargs.pop(key, None))
+    fortinet_fwp = add_fwpolicy_to_head(obj, context, **kwargs)
+    fwr_ass.setdefault('fortinet_pid', fortinet_fwp.id)
+    add_record(
+        obj, context, fortinet_db.Fortinet_FW_Rule_Association, **fwr_ass)
+
+
+def delete_fwaas_subpolicy(obj, context, **kwargs):
+    if kwargs.get('fortinet_pid', None):
+        delete_fwpolicy(obj, context, id=kwargs['fortinet_pid'])
+    fortinet_db.Fortinet_FW_Rule_Association.delete_record(context, **kwargs)
 
 
 def add_vip(obj, context, **kwargs):
-    return add_by_name(obj, context,
-                       fortinet_db.Fortinet_Firewall_VIP,
-                       resources.FirewallVip,
-                       **kwargs)
+    return add_by_name(obj, context, fortinet_db.Fortinet_Firewall_VIP,
+                       resources.FirewallVip, **kwargs)
 
 
 def delete_vip(obj, context, **kwargs):
-    return delete_by_name(obj, context,
-                          fortinet_db.Fortinet_Firewall_VIP,
-                          resources.FirewallVip,
-                          **kwargs)
+    return delete_by_name(obj, context, fortinet_db.Fortinet_Firewall_VIP,
+                          resources.FirewallVip, **kwargs)
 
 
 def add_routerstatic(obj, context, **kwargs):
@@ -686,11 +779,6 @@ def add_vlink(obj, context, vdom):
                          dst=const.EXT_DEF_DST,
                          device=vlink_vlan.inf_name_int_vdom,
                          gateway=gateway_ip)
-        #add_fwpolicy(obj, context,
-        #             vdom=const.EXT_VDOM,
-        #             srcintf=vlink_vlan.inf_name_ext_vdom,
-        #             dstintf=obj._fortigate['ext_interface'],
-        #             nat='enable')
     return (vlink_vlan.inf_name_int_vdom, vlink_vlan.inf_name_ext_vdom)
 
 
