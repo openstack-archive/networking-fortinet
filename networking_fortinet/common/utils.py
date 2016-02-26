@@ -686,11 +686,6 @@ def add_vlink(obj, context, vdom):
                          dst=const.EXT_DEF_DST,
                          device=vlink_vlan.inf_name_int_vdom,
                          gateway=gateway_ip)
-        #add_fwpolicy(obj, context,
-        #             vdom=const.EXT_VDOM,
-        #             srcintf=vlink_vlan.inf_name_ext_vdom,
-        #             dstintf=obj._fortigate['ext_interface'],
-        #             nat='enable')
     return (vlink_vlan.inf_name_int_vdom, vlink_vlan.inf_name_ext_vdom)
 
 
