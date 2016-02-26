@@ -49,6 +49,9 @@ Q_FORTINET_PLUGIN_NPU_AVAILABLE=${Q_FORTINET_PLUGIN_NPU_AVAILABLE:-True}
 # Specify port for tenant network bridge
 Q_FORTINET_TENANT_INTERFACE=${Q_FORTINET_TENANT_INTERFACE:-}
 
+# Specify tempest ping timeout
+PING_TIMEOUT=${PING_TIMEOUT:-240}
+
 # The project directory
 NETWORKING_FGT_DIR=$DEST/networking-fortinet
 
@@ -91,6 +94,12 @@ function configure_fortigate_neutron_ml2_driver {
     fi
 }
 
+function configure_tempest_for_fortigate_plugin {
+    # sometimes it can take 3 dhcp discover attempts for vm
+    # to get an ip address in our ci system.
+    iniset /$TEMPEST_CONFIG compute ping_timeout $PING_TIMEOUT
+}
+
 if is_service_enabled fortinet-neutron; then
     if [[ "$1" == "source" ]]; then
         # no-op
@@ -99,14 +108,19 @@ if is_service_enabled fortinet-neutron; then
         install_fortigate_neutron_ml2_driver
     elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
         configure_fortigate_neutron_ml2_driver
-    elif [[ "$1" == "stack" && "$2" == "post-extra" ]]; then
-        # no-op
-        :
+    elif [[ "$1" == "stack" && "$2" == "extra" ]]; then
+        configure_tempest_for_fortigate_plugin
     fi
 
     if [[ "$1" == "unstack" ]]; then
-        # no-op
-        :
+        if [[ ! -z $FGT_CONFIG_PATH ]]; then
+            ssh -o StrictHostKeyChecking=no -tt $Q_FORTINET_PLUGIN_FG_USERNAME@$Q_FORTINET_PLUGIN_FG_IP << EOF
+config global
+execute restore config ftp $FGT_CONFIG_PATH $FTP_SERVER $FTP_USER $FTP_PASS
+y
+exit
+EOF
+        fi
     fi
 
     if [[ "$1" == "clean" ]]; then
