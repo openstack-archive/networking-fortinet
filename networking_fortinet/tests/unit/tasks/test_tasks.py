@@ -74,3 +74,6 @@ class TestTasks(unittest2.TestCase):
         self.tasks.register(**subtask)
         count = self.tasks._tasks.count(subtask)
         self.assertEqual(1, count)
+
+if __name__ == '__main__':
+    unittest2.main()

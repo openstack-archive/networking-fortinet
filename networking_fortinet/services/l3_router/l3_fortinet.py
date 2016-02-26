@@ -30,7 +30,7 @@ from neutron.plugins.ml2 import db
 from neutron.services.l3_router import l3_router_plugin as router
 
 from networking_fortinet._i18n import _LE
-from networking_fortinet.api_client import client
+from networking_fortinet.common import config
 from networking_fortinet.common import constants as const
 from networking_fortinet.common import resources
 from networking_fortinet.common import utils
@@ -66,30 +66,13 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
         self.task_manager = tasks.TaskManager()
         self.task_manager.start()
         self.Fortinet_init()
-        self.enable_fwaas = 'fwaas_fortinet' in cfg.CONF.service_plugins
 
     def Fortinet_init(self):
         """Fortinet specific initialization for this class."""
         LOG.debug("FortinetL3ServicePlugin_init")
-        self._fortigate = {
-            'address': cfg.CONF.ml2_fortinet.address,
-            'port': cfg.CONF.ml2_fortinet.port,
-            'protocol': cfg.CONF.ml2_fortinet.protocol,
-            'username': cfg.CONF.ml2_fortinet.username,
-            'password': cfg.CONF.ml2_fortinet.password,
-            'int_interface': cfg.CONF.ml2_fortinet.int_interface,
-            'ext_interface': cfg.CONF.ml2_fortinet.ext_interface,
-            'tenant_network_type': cfg.CONF.ml2_fortinet.tenant_network_type,
-            'vlink_vlan_id_range': cfg.CONF.ml2_fortinet.vlink_vlan_id_range,
-            'vlink_ip_range': cfg.CONF.ml2_fortinet.vlink_ip_range,
-            'vip_mappedip_range': cfg.CONF.ml2_fortinet.vip_mappedip_range,
-            'npu_available': cfg.CONF.ml2_fortinet.npu_available
-        }
-
-        api_server = [(self._fortigate['address'], self._fortigate['port'],
-                      'https' == self._fortigate['protocol'])]
-        self._driver = client.FortiosApiClient(api_server,
-            self._fortigate['username'], self._fortigate['password'])
+        self._fortigate = config.fgt_info
+        self._driver = config.get_apiclient()
+        self.enable_fwaas = 'fwaas_fortinet' in cfg.CONF.service_plugins
 
     def create_router(self, context, router):
         LOG.debug("create_router: router=%s" % (router))
@@ -123,6 +106,10 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
     def delete_router(self, context, id):
         LOG.debug("delete_router: router id=%s" % (id))
         try:
+            if self.enable_fwaas:
+                fw_plugin = manager.NeutronManager.get_service_plugins().get(
+                    service_consts.FIREWALL)
+                fw_plugin.update_firewall_for_delete_router(context, id)
             with context.session.begin(subtransactions=True):
                 router = fortinet_db.query_record(context, l3_db.Router, id=id)
                 super(FortinetL3ServicePlugin, self).delete_router(context, id)
@@ -187,7 +174,7 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                             "router interface. info=%(info)s, "
                             "router_id=%(router_id)s"),
                           {"info": info, "router_id": router_id})
-                resources.Exinfo(e)
+                utils._rollback_on_err(self, context, e)
                 with excutils.save_and_reraise_exception():
                     self.remove_router_interface(context, router_id,
                                                  interface_info)
@@ -342,14 +329,21 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                                srcaddr=fixed_ip_address,
                                dstintf=int_intf,
                                poolname=mappedip)
-            utils.head_firewall_policy(self, context,
-                                       vdom=db_namespace.vdom,
-                                       id=db_fwpolicy.edit_id)
 
             if self.enable_fwaas:
-                fw_plugin = manager.NeutronManager.get_service_plugins().get(
-                    service_consts.FIREWALL)
-                fw_plugin.add_fip(context, l3db_fip)
+                fwrass = fortinet_db.Fortinet_FW_Rule_Association.query_one(
+                    context, fwr_id=db_namespace.tenant_id)
+                default_fwp = getattr(fwrass, 'fortinet_policy', None)
+                if getattr(default_fwp, 'edit_id', None):
+                    utils.head_firewall_policy(self, context,
+                                               vdom=db_namespace.vdom,
+                                               id=db_fwpolicy.edit_id,
+                                               after=default_fwp.edit_id)
+                    _headed = True
+            if '_headed' not in locals():
+                utils.head_firewall_policy(self, context,
+                                           vdom=db_namespace.vdom,
+                                           id=db_fwpolicy.edit_id)
         except Exception as e:
             utils._rollback_on_err(self, context, e)
             raise e
@@ -364,10 +358,6 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                             fortinet_db.Fortinet_FloatingIP_Allocation,
                             floating_ip_address=l3db_fip.floating_ip_address,
                             allocated=True)
-        if self.enable_fwaas:
-            fw_plugin = manager.NeutronManager.get_service_plugins().get(
-                service_consts.FIREWALL)
-            fw_plugin.remove_fip(context, db_namespace.vdom, id)
         int_intf, ext_intf = utils.get_vlink_intf(self, context,
                                                vdom=db_namespace.vdom)
         db_ip = fortinet_db.query_record(context, models_v2.IPAllocation,

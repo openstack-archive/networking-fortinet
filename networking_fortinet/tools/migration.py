@@ -14,21 +14,24 @@
 
 import time
 import sys
+
 from oslo_config import cfg
 from oslo_log import log as logging
-from oslo_log import handlers
 from neutron import version
+
 from neutron.common import constants as l3_constants
+
 from neutron.db import models_v2, l3_db
-from neutron.plugins.ml2.plugin import Ml2Plugin as ml2_plugin
+
 from neutron.db.external_net_db import ExternalNetwork
+
 from oslo_db.sqlalchemy import session
-from neutron.plugins.ml2 import db
+import neutron.plugins.ml2.models as ml2_db
+
 from networking_fortinet.common import resources
 from networking_fortinet.common import utils
-import neutron.plugins.ml2.models as ml2_db
-from networking_fortinet import mech_fortinet
-from networking_fortinet import l3_fortinet
+from networking_fortinet.ml2 import mech_fortinet
+from networking_fortinet.services.l3_router import l3_fortinet
 from networking_fortinet.tasks import tasks
 from networking_fortinet.tasks import constants as t_consts
 from networking_fortinet.db import models as fortinet_db
@@ -144,7 +147,7 @@ class Fake_FortinetL3ServicePlugin(l3_fortinet.FortinetL3ServicePlugin):
     def create_floatingip(self, context, floatingip, returned_obj):
         """Create floating IP.
         """
-        LOG.debug("create_floatingip: floatingip=%s" % floatingip)
+        LOG.debug(_("create_floatingip: floatingip=%s" % floatingip))
         self._allocate_floatingip(context, returned_obj)
         if returned_obj.get('port_id', None):
             if not floatingip['floatingip'].get('fixed_ip_address', None):
