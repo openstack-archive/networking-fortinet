@@ -22,13 +22,15 @@ from neutron.db import l3_db
 from neutron import manager
 from neutron.plugins.common import constants as const
 from oslo_log import log as logging
-
-from neutron_fwaas._i18n import _LE
+try:
+    from neutron_fwaas._i18n import _LE
+except ImportError:
+    from networking_fortinet._i18n import _LE
 from neutron_fwaas.db.firewall import firewall_db
 from neutron_fwaas.db.firewall import firewall_router_insertion_db
 from neutron_fwaas.extensions import firewall as fw_ext
-from neutron_fwaas.services.firewall.plugins.fortinet import config
 
+from networking_fortinet.common import config
 from networking_fortinet.common import constants as constants
 from networking_fortinet.common import utils as utils
 from networking_fortinet.db import models as fortinet_db

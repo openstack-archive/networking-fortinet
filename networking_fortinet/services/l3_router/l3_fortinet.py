@@ -30,7 +30,7 @@ from neutron.plugins.ml2 import db
 from neutron.services.l3_router import l3_router_plugin as router
 
 from networking_fortinet._i18n import _LE
-from networking_fortinet.api_client import client
+from networking_fortinet.common import config
 from networking_fortinet.common import constants as const
 from networking_fortinet.common import resources
 from networking_fortinet.common import utils
@@ -46,9 +46,6 @@ DEVICE_OWNER_ROUTER_INTF = l3_constants.DEVICE_OWNER_ROUTER_INTF
 DEVICE_OWNER_ROUTER_GW = l3_constants.DEVICE_OWNER_ROUTER_GW
 DEVICE_OWNER_FLOATINGIP = l3_constants.DEVICE_OWNER_FLOATINGIP
 
-
-cfg.CONF.import_group("ml2_fortinet",
-                      "networking_fortinet.common.config")
 
 LOG = logging.getLogger(__name__)
 
@@ -71,25 +68,8 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
     def Fortinet_init(self):
         """Fortinet specific initialization for this class."""
         LOG.debug("FortinetL3ServicePlugin_init")
-        self._fortigate = {
-            'address': cfg.CONF.ml2_fortinet.address,
-            'port': cfg.CONF.ml2_fortinet.port,
-            'protocol': cfg.CONF.ml2_fortinet.protocol,
-            'username': cfg.CONF.ml2_fortinet.username,
-            'password': cfg.CONF.ml2_fortinet.password,
-            'int_interface': cfg.CONF.ml2_fortinet.int_interface,
-            'ext_interface': cfg.CONF.ml2_fortinet.ext_interface,
-            'tenant_network_type': cfg.CONF.ml2_fortinet.tenant_network_type,
-            'vlink_vlan_id_range': cfg.CONF.ml2_fortinet.vlink_vlan_id_range,
-            'vlink_ip_range': cfg.CONF.ml2_fortinet.vlink_ip_range,
-            'vip_mappedip_range': cfg.CONF.ml2_fortinet.vip_mappedip_range,
-            'npu_available': cfg.CONF.ml2_fortinet.npu_available
-        }
-
-        api_server = [(self._fortigate['address'], self._fortigate['port'],
-                      'https' == self._fortigate['protocol'])]
-        self._driver = client.FortiosApiClient(api_server,
-            self._fortigate['username'], self._fortigate['password'])
+        self._fortigate = config.fgt_info
+        self._driver = config.get_apiclient()
 
     def create_router(self, context, router):
         LOG.debug("create_router: router=%s" % (router))
@@ -106,10 +86,10 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                 namespace = utils.add_vdom(self, context, tenant_id=tenant_id)
                 utils.add_vlink(self, context, namespace.vdom)
             except Exception as e:
-                LOG.error(_LE("Failed to create_router router=%(router)s"),
-                          {"router": router})
-                resources.Exinfo(e)
-                utils._rollback_on_err(self, context, e)
+                with excutils.save_and_reraise_exception():
+                    LOG.error(_LE("Failed to create_router router=%(router)s"),
+                              {"router": router})
+                    utils._rollback_on_err(self, context, e)
         utils.update_status(self, context, t_consts.TaskStatus.COMPLETED)
         return super(FortinetL3ServicePlugin, self).\
             create_router(context, router)
@@ -131,9 +111,10 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                     utils.delete_vdom(self, context,
                                       tenant_id=router.tenant_id)
         except Exception as e:
-            LOG.error(_LE("Failed to delete_router routerid=%(id)s"),
-                      {"id": id})
-            resources.Exinfo(e)
+            with excutils.save_and_reraise_exception():
+                LOG.error(_LE("Failed to delete_router routerid=%(id)s"),
+                          {"id": id})
+                resources.Exinfo(e)
 
     def add_router_interface(self, context, router_id, interface_info):
         """creates vlnk on the fortinet device."""
@@ -218,11 +199,11 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                                       vdom=db_namespace.vdom,
                                       srcintf=vlan_inf)
             except Exception:
-                LOG.error(_LE("Fail remove of interface from Fortinet router "
-                              "interface. info=%(info)s, "
-                              "router_id=%(router_id)s") %
-                          ({"info": info, "router_id": router_id}))
-                raise Exception
+                with excutils.save_and_reraise_exception():
+                    LOG.error(_LE("Fail remove of interface from Fortigate "
+                                  "router interface. info=%(info)s, "
+                                  "router_id=%(router_id)s"),
+                             {"info": info, "router_id": router_id})
         return info
 
     def create_floatingip(self, context, floatingip):
@@ -252,10 +233,10 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                                     id=returned_obj['id'])
             return returned_obj
         except Exception as e:
-            resources.Exinfo(e)
-            super(FortinetL3ServicePlugin, self).delete_floatingip(context,
-                                                           returned_obj['id'])
-            raise Exception("Failed to create the floating ip")
+            with excutils.save_and_reraise_exception():
+                resources.Exinfo(e)
+                super(FortinetL3ServicePlugin, self).delete_floatingip(
+                    context, returned_obj['id'])
 
     def delete_floatingip(self, context, id):
         LOG.debug("delete_floatingip called() id=%s", id)
@@ -285,10 +266,11 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                 self.update_floatingip_status(context, res,
                                 l3_constants.FLOATINGIP_STATUS_ACTIVE, id=id)
             except Exception as e:
-                resources.Exinfo(e)
-                super((FortinetL3ServicePlugin, self).disassociate_floatingips(
-                    context, floatingip['floatingip']['port_id']))
-                raise e
+                with excutils.save_and_reraise_exception():
+                    resources.Exinfo(e)
+                    super(FortinetL3ServicePlugin,
+                          self).disassociate_floatingips(
+                        context, floatingip['floatingip']['port_id'])
         else:
             # disassociate floating ip.
             self._disassociate_floatingip(context, id)
@@ -351,8 +333,8 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                     service_consts.FIREWALL)
                 fw_plugin.add_fip(context, l3db_fip)
         except Exception as e:
-            utils._rollback_on_err(self, context, e)
-            raise e
+            with excutils.save_and_reraise_exception():
+                utils._rollback_on_err(self, context, e)
         utils.update_status(self, context, t_consts.TaskStatus.COMPLETED)
 
     def _disassociate_floatingip(self, context, id):
@@ -519,8 +501,8 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                                    vdom=db_namespace.vdom,
                                    startip=mappedip)
             except Exception as e:
-                utils._rollback_on_err(self, context, e)
-                raise e
+                with excutils.save_and_reraise_exception():
+                    utils._rollback_on_err(self, context, e)
         utils.update_status(self, context, t_consts.TaskStatus.COMPLETED)
 
     def _release_floatingip(self, context, id):

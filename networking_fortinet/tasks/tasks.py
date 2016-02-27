@@ -23,9 +23,8 @@ from oslo_service import loopingcall
 import six
 
 from neutron.common import exceptions
-from neutron.i18n import _LE
-from neutron.i18n import _LI
-
+from networking_fortinet._i18n import _LE
+from networking_fortinet._i18n import _LI
 from networking_fortinet.common import resources
 from networking_fortinet.common import singleton
 from networking_fortinet.tasks import constants
