@@ -3,11 +3,11 @@
 disable_service n-net
 disable_service ceilometer-acompute
 disable_service tempest
-enable_service q-svc q-meta q-agt n-novnc
+enable_service q-svc q-fwaas q-agt n-novnc
 
 # CHANGEME: customized git repo location
-enable_plugin networking-fortinet file:///home/stack/networking-fortinet stable/liberty
-#enable_plugin networking-fortinet http://10.160.2.223:8080/networking-fortinet stable/liberty
+enable_plugin networking-fortinet file:///home/stack/networking-fortinet master
+#enable_plugin networking-fortinet https://git.openstack.com/openstack/networking-fortinet master
 
 IP_VERSION=4
 Q_PLUGIN=ml2
@@ -19,6 +19,11 @@ Q_ML2_PLUGIN_TYPE_DRIVERS=local,flat,vlan,gre,vxlan
 Q_ML2_TENANT_NETWORK_TYPE=vlan
 PROVIDER_NETWORK_TYPE=vlan
 PHYSICAL_NETWORK=physnet1
+ENABLE_TENANT_TUNNELS=False
+
+# CHANGEME: if q-fwwass is enabled and fortigate is used as firewall.
+FWAAS_PLUGIN=fwaas_fortinet
+
 # CHANGEME: The interface for tenant traffic
 Q_FORTINET_TENANT_INTERFACE=eth2
 OVS_PHYSICAL_BRIDGE=br-${Q_FORTINET_TENANT_INTERFACE}

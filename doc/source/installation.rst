@@ -23,12 +23,13 @@ following:
 
     2. Controller and compute nodes are installed with Ubuntu 14.04 or CentOS7.
 
-    3. Fortigate is 5.2.3 or 5.2.4 GA version. Clean configuration with only control IP.
+    3. Fortigate is 5.2.3 GA version and up. Clean configuration with only control IP.
 
     4. 3 virtual switches(ESXI vswitch or linux bridge) or physical switches/vlans:
        1 for control plane, 1 for tenant network, 1 for external network. Vlanids are
        allowed on the switches and enable promisc mode. http and https access are allowed
        on Fortigate’s control interface.
+
     5. Controller has at least 1 nic on control plane with Internet access.
 
     6. Compute node has at least 2 nics, one on control plane and the other on tenant
@@ -53,7 +54,7 @@ In this scenario, Fortigate plugin will be installed along with OpenStack using 
 
     4. cd devstack; sudo tools/create-stack-user.sh if you don’t have a stack user with sudo privilege.
 
-    5. Use ``networking-fortinet/devstack/local.conf.example.controller`` and ``networking-fortinet/devstack/local.conf.example.compute`` as and example to create local.conf for control and compute nodes or use ``networking-fortinet/devstack/local.conf.example.aio`` for all-in-one node and set the required parameters in the local.conf based on the your setup.
+    5. Use ``networking-fortinet/devstack/local.conf.example.controller`` and ``networking-fortinet/devstack/local.conf.example.compute`` as and example to create local.conf for control and compute nodes or use ``networking-fortinet/devstack/local.conf.example.aio`` for all-in-one node and set the required parameters in the local.conf based on the your setup. Items that need to be changed is decorated with CHANGEME.
 
     6. Run ./stack.sh on controller first and then compute. Remember to get Fortigate ready before running stack.sh.
         
@@ -102,7 +103,7 @@ On the controller node:
     2.2 neutron.conf:
 
     [DEFAULT]
-    service_plugins = router_fortinet
+    service_plugins = router_fortinet,fwaas_fortinet ## If fortigate is used to provide fwaas, add fwaas_fortinet here.
 
 4. neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head
 
