@@ -48,6 +48,12 @@ Q_FORTINET_PLUGIN_VLAN_ID_RANGES=${Q_FORTINET_PLUGIN_VLAN_ID_RANGES:-4000:4094}
 Q_FORTINET_PLUGIN_NPU_AVAILABLE=${Q_FORTINET_PLUGIN_NPU_AVAILABLE:-True}
 # Specify port for tenant network bridge
 Q_FORTINET_TENANT_INTERFACE=${Q_FORTINET_TENANT_INTERFACE:-}
+# Firewall policy security profiles on FGT
+Q_FORTINET_FWAAS_AV_PROFILE=${Q_FORTINET_FWAAS_AV_PROFILE:-}
+Q_FORTINET_FWAAS_WEBFILTER_PROFILE=${Q_FORTINET_FWAAS_WEBFILTER_PROFILE:-}
+Q_FORTINET_FWAAS_IPS_SENSOR=${Q_FORTINET_FWAAS_IPS_SENSOR:-}
+Q_FORTINET_FWAAS_APPLICATION_LIST=${Q_FORTINET_FWAAS_APPLICATION_LIST:-}
+Q_FORTINET_FWAAS_SSL_SSH_PROFILE=${Q_FORTINET_FWAAS_SSL_SSH_PROFILE:-}
 
 # Specify tempest ping timeout
 PING_TIMEOUT=${PING_TIMEOUT:-300}
@@ -83,6 +89,16 @@ function configure_fortigate_neutron_ml2_driver {
         vlink_vlan_id_range $Q_FORTINET_PLUGIN_VLAN_ID_RANGES
     iniset /$Q_PLUGIN_CONF_FILE ml2_fortinet \
         npu_available $Q_FORTINET_PLUGIN_NPU_AVAILABLE
+    iniset /$Q_PLUGIN_CONF_FILE ml2_fortinet \
+        av_profile $Q_FORTINET_FWAAS_AV_PROFILE
+    iniset /$Q_PLUGIN_CONF_FILE ml2_fortinet \
+        webfilter_profile $Q_FORTINET_FWAAS_WEBFILTER_PROFILE
+    iniset /$Q_PLUGIN_CONF_FILE ml2_fortinet \
+        ips_sensor $Q_FORTINET_FWAAS_IPS_SENSOR
+    iniset /$Q_PLUGIN_CONF_FILE ml2_fortinet \
+        application_list $Q_FORTINET_FWAAS_APPLICATION_LIST
+    iniset /$Q_PLUGIN_CONF_FILE ml2_fortinet \
+        ssl_ssh_profile $Q_FORTINET_FWAAS_SSL_SSH_PROFILE
 
     if is_service_enabled n-cpu; then
         sudo ovs-vsctl --no-wait -- --may-exist add-br \

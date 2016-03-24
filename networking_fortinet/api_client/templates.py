@@ -515,6 +515,25 @@ ADD_FIREWALL_POLICY = """
                     "name": "ALL"
                 {% endif %}
             }],
+            {% set profiles = {
+                'av-profile': av_profile,
+                'webfilter-profile': webfilter_profile,
+                'ips-sensor': ips_sensor,
+                'application-list': application_list,
+                'ssl-ssh-profile': ssl_ssh_profile
+            } %}
+            {% set _utm_enable = true %}
+            {% for k, v in profiles.iteritems() if v is defined and v %}
+               {% if _utm_enable %}
+                   {%set _utm_enable = false %}
+                   "utm-status": "enable",
+                   "profile-protocol-options":"default",
+               {% endif %}
+               "{{ k }}": "{{ v }}",
+            {% else %}
+               "utm-status": "disable",
+               "profile-protocol-options": "",
+            {% endfor %}
             {% if comments is defined %}
                 "comments": "{{ comments }}"
             {% else %}
@@ -590,6 +609,25 @@ SET_FIREWALL_POLICY = """
                     "name": "{{ service }}"
                 }],
             {% endif %}
+            {% set profiles = {
+                'av-profile': av_profile,
+                'webfilter-profile': webfilter_profile,
+                'ips-sensor': ips_sensor,
+                'application-list': application_list,
+                'ssl-ssh-profile': ssl_ssh_profile
+            } %}
+            {% set _utm_enable = true %}
+            {% for k, v in profiles.iteritems() if v is defined and v is not none %}
+               {% if _utm_enable %}
+                   {%set _utm_enable = false %}
+                   "utm-status": "enable",
+                   "profile-protocol-options":"default",
+               {% endif %}
+               "{{ k }}": "{{ v }}",
+            {% else %}
+               "utm-status": "disable",
+               "profile-protocol-options": "",
+            {% endfor %}
             {% if comments is defined %}
                 "comments": "{{ comments }}",
             {% endif %}
