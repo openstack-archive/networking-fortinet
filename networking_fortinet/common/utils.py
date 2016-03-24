@@ -16,16 +16,15 @@ import netaddr
 from oslo_log import log as logging
 from oslo_serialization import jsonutils
 
+from neutron.db import l3_db
+from neutron.db import models_v2
+from neutron.plugins.ml2 import models as ml2_db
+
 from networking_fortinet.api_client import exception
 from networking_fortinet.common import constants as const
 from networking_fortinet.common import resources as resources
 from networking_fortinet.db import models as fortinet_db
 from networking_fortinet.tasks import constants as t_consts
-
-from neutron.db import l3_db
-from neutron.db import models_v2
-from neutron.plugins.ml2 import models as ml2_db
-
 
 LOG = logging.getLogger(__name__)
 
@@ -515,8 +514,12 @@ def add_fwpolicy(obj, context, **kwargs):
 
 
 def add_fwpolicy_to_head(obj, context, **kwargs):
+    sequence = {key: kwargs.pop(key, None) for key in ['before', 'after'] if
+                key in kwargs}
     fwpolicy = add_fwpolicy(obj, context, **kwargs)
-    head_firewall_policy(obj, context, id=fwpolicy.edit_id, vdom=fwpolicy.vdom)
+    sequence.setdefault('id', fwpolicy.edit_id)
+    sequence.setdefault('vdom', fwpolicy.vdom)
+    head_firewall_policy(obj, context, **sequence)
     return fwpolicy
 
 
@@ -585,9 +588,9 @@ def add_fwaas_subpolicy(obj, context, **kwargs):
 
 
 def delete_fwaas_subpolicy(obj, context, **kwargs):
+    fortinet_db.Fortinet_FW_Rule_Association.delete_record(context, kwargs)
     if kwargs.get('fortinet_pid', None):
         delete_fwpolicy(obj, context, id=kwargs['fortinet_pid'])
-    fortinet_db.Fortinet_FW_Rule_Association.delete_record(context, **kwargs)
 
 
 def add_vip(obj, context, **kwargs):

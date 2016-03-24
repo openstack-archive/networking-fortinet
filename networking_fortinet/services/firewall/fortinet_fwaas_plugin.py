@@ -58,6 +58,7 @@ class FortinetFirewallPlugin(
 
     def __init__(self):
         """Do the initialization for the firewall service plugin here."""
+        self._fortigate = config.fgt_info
         self._driver = config.get_apiclient()
         self.task_manager = tasks.TaskManager()
         self.task_manager.start()
@@ -133,8 +134,7 @@ class FortinetFirewallPlugin(
 
     def create_firewall(self, context, firewall):
         LOG.debug("create_firewall() called Fortinet_plugin")
-        tenant_id = self._get_tenant_id_for_create(context,
-            firewall['firewall'])
+        tenant_id = firewall['firewall']['tenant_id']
         fw_new_rtrs = self._get_routers_for_create_firewall(
             tenant_id, context, firewall)
         if not fw_new_rtrs:
@@ -275,11 +275,19 @@ class FortinetFirewallPlugin(
         LOG.debug("update_firewall_rule() id: %(id)s, "
                   "firewall_rule: %(firewall_rule)s",
                   {'id': id, 'firewall_rule': firewall_rule})
-        self._ensure_update_firewall_rule(context, id)
-        fwr = super(FortinetFirewallPlugin,
-                    self).update_firewall_rule(context, id, firewall_rule)
-        self._update_firewall_rule(context, id, fwr)
-        return fwr
+        try:
+            fwr = self._update_firewall_rule_dict(context, id, firewall_rule)
+            self._update_firewall_rule(context, id, fwr)
+            self._ensure_update_firewall_rule(context, id)
+            fwr = super(FortinetFirewallPlugin,
+                        self).update_firewall_rule(context, id, firewall_rule)
+            utils.update_status(self, context, t_consts.TaskStatus.COMPLETED)
+            return fwr
+        except Exception as e:
+            with excutils.save_and_reraise_exception():
+                LOG.error(_LE("update_firewall_rule %(fwr)s failed"),
+                          {'fwr': firewall_rule})
+                utils._rollback_on_err(self, context, e)
 
     def insert_rule(self, context, id, rule_info):
         self._ensure_update_firewall_policy(context, id)
@@ -382,6 +390,7 @@ class FortinetFirewallPlugin(
             context, vdom, place='destination_ip_address', **fwr)
         service = self._add_fwr_service(context, vdom, **fwr)
         action = self._get_fwr_action(**fwr)
+        profiles = self._get_fwp_profiles(action)
         match_vip = 'enable'
         name = fwr.get('name', '')
         # add a basic firewall rule('accept': incoming, 'deny': bidirectional)
@@ -394,7 +403,8 @@ class FortinetFirewallPlugin(
                                                   service=service['name'],
                                                   match_vip=match_vip,
                                                   action=action,
-                                                  comments=name)
+                                                  comments=name,
+                                                  **profiles)
         utils.add_record(self, context,
                          fortinet_db.Fortinet_FW_Rule_Association,
                          fwr_id=fwr['id'],
@@ -412,7 +422,8 @@ class FortinetFirewallPlugin(
                                                       nat='enable',
                                                       service=service['name'],
                                                       action=action,
-                                                      comments=name)
+                                                      comments=name,
+                                                      **profiles)
             utils.add_record(self, context,
                              fortinet_db.Fortinet_FW_Rule_Association,
                              fwr_id=fwr['id'],
@@ -438,6 +449,7 @@ class FortinetFirewallPlugin(
             place='destination_ip_address', **firewall_rule)
         service = self._make_fortinet_fwservice_dict(**firewall_rule)
         action = self._get_fwr_action(**firewall_rule)
+        profiles = self._get_fwp_profiles(action)
         for fwp in fwps_int:
             vdom = fwp.fortinet_policy.vdom
             if service['name'] != 'ALL':
@@ -449,8 +461,8 @@ class FortinetFirewallPlugin(
         # check whether related firewall policies need to update
         fwp = fwps_int[0].fortinet_policy
         name = firewall_rule.setdefault('name', fwp.comments)
-        if fwp.srcaddr == srcaddr['name'] and fwp.dstaddr == dstaddr[
-            'name'] and fwp.service == service['name']:
+        if fwp.srcaddr == srcaddr['name'] and fwp.action == action and \
+            fwp.dstaddr == dstaddr['name'] and fwp.service == service['name']:
             return
         if action in ['accept']:
             for fwp in fwps:
@@ -460,12 +472,13 @@ class FortinetFirewallPlugin(
                                                   dstaddr=dstaddr['name'],
                                                   service=service['name'],
                                                   action=action,
-                                                  comments=name)
+                                                  comments=name,
+                                                  **profiles)
                 if not fwps_ext:
                     inf_int, inf_ext = utils.get_vlink_intf(
                         self, context, vdom=fortinet_fwp.vdom)
                     utils.add_fwaas_subpolicy(self, context,
-                                              before=fortinet_fwp.edit,
+                                              before=fortinet_fwp.edit_id,
                                               vdom=fortinet_fwp.vdom,
                                               srcaddr=srcaddr['name'],
                                               dstaddr=dstaddr['name'],
@@ -475,7 +488,8 @@ class FortinetFirewallPlugin(
                                               action=action,
                                               comments=name,
                                               fwr_id=id,
-                                              type=constants.TYPE_EXT)
+                                              type=constants.TYPE_EXT,
+                                              **profiles)
         elif action in ['deny']:
             for fwp_ext in fwps_ext:
                 utils.delete_fwaas_subpolicy(self, context,
@@ -488,7 +502,8 @@ class FortinetFirewallPlugin(
                                    dstaddr=dstaddr['name'],
                                    service=service['name'],
                                    action=action,
-                                   comments=name)
+                                   comments=name,
+                                   **profiles)
         for fwp in fwps_int:
             vdom = fwp.fortinet_policy.vdom
             if service['name'] == 'ALL':
@@ -533,6 +548,29 @@ class FortinetFirewallPlugin(
             utils.delete_fwaddress(
                 self, context, vdom=namespace.vdom, name=dstaddr)
         self._delete_fwr_service(context, namespace.vdom, **fwr)
+
+    def _update_firewall_rule_dict(self, context, id, firewall_rule):
+        fwr = firewall_rule.get('firewall_rule', firewall_rule)
+        fwr_db = self._get_firewall_rule(context, id)
+        if fwr_db.firewall_policy_id:
+            fwp_db = self._get_firewall_policy(context,
+                                               fwr_db.firewall_policy_id)
+            if 'shared' in fwr and not fwr['shared']:
+                if fwr_db['tenant_id'] != fwp_db['tenant_id']:
+                    raise fw_ext.FirewallRuleInUse(firewall_rule_id=id)
+        fwr.setdefault('source_port',
+                       self._get_port_range_from_min_max_ports(
+                           fwr_db['source_port_range_min'],
+                           fwr_db['source_port_range_max']))
+        fwr.setdefault('destination_port',
+                       self._get_port_range_from_min_max_ports(
+                           fwr_db['destination_port_range_min'],
+                           fwr_db['destination_port_range_max']))
+        keys = ['name', 'protocol', 'action', 'shared', 'ip_version',
+                'source_ip_address', 'destination_ip_address', 'enabled']
+        for key in keys:
+            fwr.setdefault(key, fwr_db[key])
+        return fwr
 
     def _make_default_firewall_rule_dict(self, tenant_id):
         if tenant_id:
@@ -613,6 +651,19 @@ class FortinetFirewallPlugin(
         else:
             action = 'deny'
         return action
+
+    def _get_fwp_profiles(self, action):
+        profiles = {
+            'av_profile': None,
+            'webfilter_profile': None,
+            'ips_sensor': None,
+            'application_list': None,
+            'ssl_ssh_profile': None
+        }
+        if action in ['allow', 'accept']:
+            for key in profiles:
+                profiles[key] = self._fortigate[key]
+        return profiles
 
     def _get_fip_before_id(self, context, fwr_id):
         fwp_assed = fortinet_db.Fortinet_FW_Rule_Association.query_one(

@@ -41,6 +41,16 @@ Q_FORTINET_PLUGIN_NPU_AVAILABLE=False
 Q_FORTINET_PLUGIN_FG_USERNAME=admin
 # CHANGEME: fortigate password
 Q_FORTINET_PLUGIN_FG_PASSWORD=''
+# following 5 parameters enable fortigate firewall policy security profiles on
+# fwaas.
+# CHANGEME: leave empty to disable the security profile or change to something
+# else other than default, but you have to define them first in the specific
+# vdom on fortigate if you know what you are doing.
+Q_FORTINET_FWAAS_AV_PROFILE=default
+Q_FORTINET_FWAAS_WEBFILTER_PROFILE=default
+Q_FORTINET_FWAAS_IPS_SENSOR=default
+Q_FORTINET_FWAAS_APPLICATION_LIST=default
+Q_FORTINET_FWAAS_SSL_SSH_PROFILE=certificate-inspection
 
 # generic configuration parameters
 # CHANGEME: if needed

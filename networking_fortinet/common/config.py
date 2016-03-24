@@ -44,7 +44,22 @@ ML2_FORTINET = [
                      'default is 169.254.128.0/23')),
     cfg.BoolOpt('npu_available', default=True,
                 help=_('If npu_available is True, it requires hardware FGT'
-                      'with NPU, default is True'))
+                      'with NPU, default is True')),
+    cfg.StrOpt('av_profile', default=None,
+               help=_('Assign a default antivirus profile in FWaaS, '
+                     'the profile must exist in FGT, default is ""')),
+    cfg.StrOpt('webfilter_profile', default=None,
+               help=_('Assign a default web filter profile in FWaaS, '
+                     'the profile must exist in FGT, default is ""')),
+    cfg.StrOpt('ips_sensor', default=None,
+               help=_('Assign a default IPS profile in FWaaS, '
+                     'the profile must exist in FGT, default is ""')),
+    cfg.StrOpt('application_list', default=None,
+               help=_('Assign a default application control profile in FWaaS,'
+                     ' the profile must exist in FGT, default is ""')),
+    cfg.StrOpt('ssl_ssh_profile', default=None,
+               help=_('Assign a default SSL/SSH inspection profile in FWaaS, '
+                     'the profile must exist in FGT, default is ""'))
 ]
 
 cfg.CONF.register_opts(ML2_FORTINET, "ml2_fortinet")
@@ -63,7 +78,12 @@ fgt_info = {
     'vlink_vlan_id_range': cfg.CONF.ml2_fortinet.vlink_vlan_id_range,
     'vlink_ip_range': cfg.CONF.ml2_fortinet.vlink_ip_range,
     'vip_mappedip_range': cfg.CONF.ml2_fortinet.vip_mappedip_range,
-    'npu_available': cfg.CONF.ml2_fortinet.npu_available
+    'npu_available': cfg.CONF.ml2_fortinet.npu_available,
+    'av_profile': cfg.CONF.ml2_fortinet.av_profile,
+    'webfilter_profile': cfg.CONF.ml2_fortinet.webfilter_profile,
+    'ips_sensor': cfg.CONF.ml2_fortinet.ips_sensor,
+    'application_list': cfg.CONF.ml2_fortinet.application_list,
+    'ssl_ssh_profile': cfg.CONF.ml2_fortinet.ssl_ssh_profile
 }
 
 
