@@ -33,7 +33,8 @@ class FWaaSScenarioTest(fwaas_client.FWaaSClientMixin,
                            should_connect=True,
                            check_icmp=True, check_ssh=True,
                            check_reverse_icmp_ip=None,
-                           should_reverse_connect=True):
+                           should_reverse_connect=True,
+                           check_reverse_curl=False):
         if should_connect:
             msg = "Timed out waiting for %s to become reachable" % ip_address
         else:
@@ -63,6 +64,27 @@ class FWaaSScenarioTest(fwaas_client.FWaaSClientMixin,
                     except lib_exc.SSHExecCommandFailed:
                         if should_reverse_connect:
                             raise
+                    if check_reverse_curl:
+                        cmd1 = 'curl http://httpstat.us/200 |grep "200 OK"'
+                        cmd2 = 'curl http://www.eicar.org/download/eicar.com|\
+                                grep EICAR-STANDARD-ANTIVIRUS-TEST-FILE'
+                        try:
+                            client.exec_command(cmd1)
+                            self.assertTrue(should_reverse_connect,
+                                            "Unexpectedly reachable (reverse)")
+                        except lib_exc.SSHExecCommandFailed:
+                            if should_reverse_connect:
+                                raise
+                        # test virus file download should be blocked by default
+                        # security profile enabled.
+                        try:
+                            client.exec_command(cmd2)
+                            self.assertFalse(should_reverse_connect,
+                                            "Unexpectedly reachable (reverse)")
+                            raise
+                        except lib_exc.SSHExecCommandFailed:
+                            if should_reverse_connect:
+                                pass
             except lib_exc.SSHTimeout:
                 if should_connect:
                     raise

@@ -107,6 +107,22 @@ class TestFortigateFWaaS(base.FWaaSScenarioTest):
             #'server2_fixed_ip': server2_fixed_ip,
         }
 
+    def _block_subnet(self, subnet1, **kwargs):
+        rules = [
+            self.create_firewall_rule(destination_ip_address=subnet1.cidr,
+                                      action="deny"),
+            self.create_firewall_rule(action="allow"),
+        ]
+        rule_ids = [r['id'] for r in rules]
+        fw_policy = self.create_firewall_policy(firewall_rules=rule_ids)
+        fw = self._create_firewall(firewall_policy_id=fw_policy['id'])
+        self._wait_firewall_ready(fw['id'])
+        return {
+            'fw': fw,
+            'fw_policy': fw_policy,
+            'subnet1': subnet1.cidr,
+        }
+
     def _block_icmp(self, **kwargs):
         fw_rule = self.create_firewall_rule(
             protocol="icmp",
@@ -218,6 +234,11 @@ class TestFortigateFWaaS(base.FWaaSScenarioTest):
             enabled=False)
         self._wait_firewall_ready(ctx['fw']['id'])
 
+    def _remove_router_from_fw(self, ctx):
+        self.firewalls_client.update_firewall(firewall_id=ctx['fw']['id'],
+                                              router_ids=[])
+        self._wait_firewall_ready(ctx['fw']['id'])
+
     def _update_block_ssh_rule_by_port(self, ctx):
         self.firewall_rules_client.update_firewall_rule(
             firewall_rule_id=ctx['fw_rule']['id'],
@@ -227,6 +248,11 @@ class TestFortigateFWaaS(base.FWaaSScenarioTest):
         self.firewall_rules_client.update_firewall_rule(
             firewall_rule_id=ctx['fw_rule']['id'],
             action="allow")
+
+    def _update_block_ssh_rule_by_proto(self, ctx):
+        self.firewall_rules_client.update_firewall_rule(
+            firewall_rule_id=ctx['fw_rule']['id'],
+            protocol="udp")
 
     def _allow_ip(self, ctx):
         self._delete_fw(ctx)
@@ -249,8 +275,27 @@ class TestFortigateFWaaS(base.FWaaSScenarioTest):
         fw = self._create_firewall(firewall_policy_id=fw_policy['id'])
         self._wait_firewall_ready(fw['id'])
 
+    def _allow_subnet(self, ctx):
+        self._delete_fw(ctx)
+        subnet1 = ctx['subnet1']
+        rules = [
+            self.create_firewall_rule(
+                destination_ip_address=subnet1,
+                action="allow"),
+        ]
+        rule_ids = [r['id'] for r in rules]
+        fw_policy = self.create_firewall_policy(firewall_rules=rule_ids)
+        fw = self._create_firewall(firewall_policy_id=fw_policy['id'])
+        self._wait_firewall_ready(fw['id'])
+
     def _confirm_allowed(self, **kwargs):
         self.check_connectivity(check_reverse_icmp_ip=self._public_gateway_ip,
+                                check_reverse_curl=False,
+                                **kwargs)
+
+    def _confirm_allow_novirus(self, **kwargs):
+        self.check_connectivity(check_reverse_icmp_ip=self._public_gateway_ip,
+                                check_reverse_curl=True,
                                 **kwargs)
 
     def _confirm_allowed_oneway(self, **kwargs):
@@ -301,7 +346,7 @@ class TestFortigateFWaaS(base.FWaaSScenarioTest):
         server_floating_ip = self.create_floating_ip(server, public_network_id)
         fixed_ip = server['addresses'].values()[0][0]['addr']
         floating_ip = server_floating_ip.floating_ip_address
-        return fixed_ip, floating_ip, private_key, router
+        return fixed_ip, floating_ip, subnet, private_key, router
 
     def _get_public_gateway_ip(self):
         self._public_gateway_ip = None
@@ -333,8 +378,8 @@ class TestFortigateFWaaS(base.FWaaSScenarioTest):
             msg = "This test assumes no public_router_id configured"
             raise self.skipException(msg)
 
-        server1_fixed_ip, server1_floating_ip, private_key1, router1 = \
-            self._create_topology()
+        (server1_fixed_ip, server1_floating_ip, subnet1, private_key1,
+         router1) = self._create_topology()
         #server2_fixed_ip, server2_floating_ip, private_key2, router2 = \
         #    self._create_topology()
         self._get_public_gateway_ip()
@@ -357,7 +402,8 @@ class TestFortigateFWaaS(base.FWaaSScenarioTest):
         #                        username=ssh_login,
         #                        private_key=private_key2)
         ctx = block(server1_fixed_ip=server1_fixed_ip,
-                    server1_floating_ip=server1_floating_ip)
+                    server1_floating_ip=server1_floating_ip,
+                    subnet1=subnet1)
         #            server2_fixed_ip=server2_fixed_ip,
         #            server2_floating_ip=server2_floating_ip)
         confirm_blocked(ip_address=server1_floating_ip, username=ssh_login,
@@ -373,6 +419,12 @@ class TestFortigateFWaaS(base.FWaaSScenarioTest):
     @test.idempotent_id('5b5f57bb-e3ca-4246-9174-bb5fe9298c5f')
     def test_firewall_block_ip(self):
         self._test_firewall_basic(block=self._block_ip, allow=self._allow_ip,
+                                  confirm_allowed=self._confirm_allowed_oneway)
+
+    @test.idempotent_id('5b5f57bb-e3ca-4246-9174-bb5fe9298c5e')
+    def test_firewall_block_subnet(self):
+        self._test_firewall_basic(block=self._block_subnet,
+                                  allow=self._allow_subnet,
                                   confirm_allowed=self._confirm_allowed_oneway)
 
     @test.idempotent_id('22e23dd5-c00c-4510-87ea-4874c705a45f')
@@ -391,7 +443,8 @@ class TestFortigateFWaaS(base.FWaaSScenarioTest):
     @test.idempotent_id('20466b39-e356-4e58-bb8e-199d1172eb53')
     def test_firewall_remove_rule(self):
         self._test_firewall_basic(block=self._block_all_with_default_allow,
-                                  allow=self._remove_rule)
+                                  allow=self._remove_rule,
+                                  confirm_allowed=self._confirm_allow_novirus)
 
     @decorators.skip_because(bug="0363573")
     @test.idempotent_id('deb5874a-cc43-468e-9ac6-42b9e8a767fd')
@@ -399,17 +452,31 @@ class TestFortigateFWaaS(base.FWaaSScenarioTest):
         self._test_firewall_basic(block=self._block_all_with_default_allow,
                                   allow=self._disable_rule)
 
+    @test.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede1')
+    def test_firewall_remove_router_from_fw(self):
+        self._test_firewall_basic(block=self._block_all_with_default_allow,
+                                  allow=self._remove_router_from_fw)
+
     @test.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede2')
     def test_firewall_update_ssh_policy_by_port(self):
         self._test_firewall_basic(block=self._block_ssh,
                                   allow=self._update_block_ssh_rule_by_port,
-                                  confirm_blocked=self._confirm_ssh_blocked)
+                                  confirm_blocked=self._confirm_ssh_blocked,
+                                  confirm_allowed=self._confirm_allow_novirus)
 
     @test.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede3')
     def test_firewall_update_ssh_policy_by_action(self):
         self._test_firewall_basic(block=self._block_ssh,
                                   allow=self._update_block_ssh_rule_by_action,
-                                  confirm_blocked=self._confirm_ssh_blocked)
+                                  confirm_blocked=self._confirm_ssh_blocked,
+                                  confirm_allowed=self._confirm_allow_novirus)
+
+    @test.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede3')
+    def test_firewall_update_ssh_policy_by_proto(self):
+        self._test_firewall_basic(block=self._block_ssh,
+                                  allow=self._update_block_ssh_rule_by_proto,
+                                  confirm_blocked=self._confirm_ssh_blocked,
+                                  confirm_allowed=self._confirm_allow_novirus)
 
     @test.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede1')
     def test_firewall_empty_policy(self):
