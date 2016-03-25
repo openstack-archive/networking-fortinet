@@ -218,10 +218,15 @@ class TestFortigateFWaaS(base.FWaaSScenarioTest):
             enabled=False)
         self._wait_firewall_ready(ctx['fw']['id'])
 
-    def _update_block_ssh_rule(self, ctx):
+    def _update_block_ssh_rule_by_port(self, ctx):
         self.firewall_rules_client.update_firewall_rule(
             firewall_rule_id=ctx['fw_rule']['id'],
             destination_port="23:25")
+
+    def _update_block_ssh_rule_by_action(self, ctx):
+        self.firewall_rules_client.update_firewall_rule(
+            firewall_rule_id=ctx['fw_rule']['id'],
+            action="allow")
 
     def _allow_ip(self, ctx):
         self._delete_fw(ctx)
@@ -395,9 +400,15 @@ class TestFortigateFWaaS(base.FWaaSScenarioTest):
                                   allow=self._disable_rule)
 
     @test.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede2')
-    def test_firewall_update_ssh_policy(self):
+    def test_firewall_update_ssh_policy_by_port(self):
         self._test_firewall_basic(block=self._block_ssh,
-                                  allow=self._update_block_ssh_rule,
+                                  allow=self._update_block_ssh_rule_by_port,
+                                  confirm_blocked=self._confirm_ssh_blocked)
+
+    @test.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede3')
+    def test_firewall_update_ssh_policy_by_action(self):
+        self._test_firewall_basic(block=self._block_ssh,
+                                  allow=self._update_block_ssh_rule_by_action,
                                   confirm_blocked=self._confirm_ssh_blocked)
 
     @test.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede1')
