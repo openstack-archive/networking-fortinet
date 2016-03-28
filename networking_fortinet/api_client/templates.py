@@ -1064,12 +1064,18 @@ SET_FIREWALL_SERVICE = """
             {% endif %}
             {% if tcp_portrange is defined %}
                 "tcp-portrange": "{{ tcp_portrange }}",
+            {% else %}
+                "tcp-portrange": "",
             {% endif %}
             {% if udp_portrange is defined %}
                 "udp-portrange": "{{ udp_portrange }}",
+            {% else %}
+                "udp-portrange": "",
             {% endif %}
             {% if sctp_portrange is defined %}
                 "sctp-portrange": "{{ sctp_portrange }}",
+            {% else %}
+                "sctp-portrange": "",
             {% endif %}
             {% if comment is defined %}
                 "comment": "{{ comment }}",
