@@ -235,6 +235,17 @@ class FortinetMechanismDriver(driver_api.MechanismDriver):
 
     def update_network_precommit(self, mech_context):
         """Noop now, it is left here for future."""
+        cur_network = mech_context.current
+        org_network = mech_context.original
+        if cur_network["router:external"] != org_network["router:external"]:
+            LOG.info(_LI("update_network_precommit failed: the external "
+                         "attribute cannot be updated, instead of updating the"
+                         " attribute, the external network only support "
+                         "creation from scratch on the admin view. \nThe "
+                         "org_network: %(org)s, \nthe cur_network %(cur)s"),
+                     {'org': org_network, 'cur': cur_network})
+            raise NotImplementedError("The external attribute cannot be "
+                                      "updated")
         pass
 
     def update_network_postcommit(self, mech_context):
