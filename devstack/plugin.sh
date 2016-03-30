@@ -113,7 +113,9 @@ function configure_fortigate_neutron_ml2_driver {
 function configure_tempest_for_fortigate_plugin {
     # sometimes it can take 3 dhcp discover attempts for vm
     # to get an ip address in our ci system.
-    iniset /$TEMPEST_CONFIG compute ping_timeout $PING_TIMEOUT
+    if is_service_enabled tempest; then
+        iniset /$TEMPEST_CONFIG compute ping_timeout $PING_TIMEOUT
+    fi
 }
 
 if is_service_enabled fortinet-neutron; then
