@@ -54,6 +54,7 @@ Q_FORTINET_FWAAS_WEBFILTER_PROFILE=${Q_FORTINET_FWAAS_WEBFILTER_PROFILE:-}
 Q_FORTINET_FWAAS_IPS_SENSOR=${Q_FORTINET_FWAAS_IPS_SENSOR:-}
 Q_FORTINET_FWAAS_APPLICATION_LIST=${Q_FORTINET_FWAAS_APPLICATION_LIST:-}
 Q_FORTINET_FWAAS_SSL_SSH_PROFILE=${Q_FORTINET_FWAAS_SSL_SSH_PROFILE:-}
+Q_FORTINET_FWAAS_ENABLE_DEFAULT_FWRULE=${Q_FORTINET_FWAAS_ENABLE_DEFAULT_FWRULE:-True}
 
 # Specify tempest ping timeout
 PING_TIMEOUT=${PING_TIMEOUT:-300}
@@ -99,6 +100,8 @@ function configure_fortigate_neutron_ml2_driver {
         application_list $Q_FORTINET_FWAAS_APPLICATION_LIST
     iniset /$Q_PLUGIN_CONF_FILE ml2_fortinet \
         ssl_ssh_profile $Q_FORTINET_FWAAS_SSL_SSH_PROFILE
+    iniset /$Q_PLUGIN_CONF_FILE ml2_fortinet \
+        enable_default_fwrule $Q_FORTINET_FWAAS_ENABLE_DEFAULT_FWRULE
 
     if is_service_enabled n-cpu; then
         sudo ovs-vsctl --no-wait -- --may-exist add-br \
