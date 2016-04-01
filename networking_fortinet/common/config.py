@@ -15,6 +15,7 @@
 from neutron.agent.common import config
 from oslo_config import cfg
 
+from networking_fortinet._i18n import _
 from networking_fortinet.api_client import client
 
 ML2_FORTINET = [
@@ -45,6 +46,9 @@ ML2_FORTINET = [
     cfg.BoolOpt('npu_available', default=True,
                 help=_('If npu_available is True, it requires hardware FGT'
                       'with NPU, default is True')),
+    cfg.BoolOpt('enable_default_fwrule', default=False,
+                help=_('If True, fwaas will add a deny all rule automatically,'
+                       ' otherwise users need to add it manaully.')),
     cfg.StrOpt('av_profile', default=None,
                help=_('Assign a default antivirus profile in FWaaS, '
                      'the profile must exist in FGT, default is ""')),
@@ -79,6 +83,7 @@ fgt_info = {
     'vlink_ip_range': cfg.CONF.ml2_fortinet.vlink_ip_range,
     'vip_mappedip_range': cfg.CONF.ml2_fortinet.vip_mappedip_range,
     'npu_available': cfg.CONF.ml2_fortinet.npu_available,
+    'enable_default_fwrule': cfg.CONF.ml2_fortinet.enable_default_fwrule,
     'av_profile': cfg.CONF.ml2_fortinet.av_profile,
     'webfilter_profile': cfg.CONF.ml2_fortinet.webfilter_profile,
     'ips_sensor': cfg.CONF.ml2_fortinet.ips_sensor,

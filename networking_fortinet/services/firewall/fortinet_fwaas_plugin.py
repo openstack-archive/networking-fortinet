@@ -341,7 +341,9 @@ class FortinetFirewallPlugin(
             if fw_with_rules.get('del-router-ids', None):
                 for fwr in list(fw_with_rules.get('firewall_rule_list', None)):
                     self._delete_firewall_rule(context, tenant_id, **fwr)
-                self._delete_firewall_rule(context, tenant_id, **default_fwr)
+                if default_fwr:
+                    self._delete_firewall_rule(
+                        context, tenant_id, **default_fwr)
                 self.update_firewall_status(
                     context, fw_with_rules['id'], const.INACTIVE)
 
@@ -352,7 +354,8 @@ class FortinetFirewallPlugin(
                 if not vdom:
                     raise fw_ext.FirewallInternalDriverError(
                         driver='Fortinet_fwaas_plugin')
-                self._add_firewall_rule(context, tenant_id, **default_fwr)
+                if default_fwr:
+                    self._add_firewall_rule(context, tenant_id, **default_fwr)
                 for fwr in reversed(
                         list(fw_with_rules.get('firewall_rule_list', None))):
                     self._add_firewall_rule(context, tenant_id, **fwr)
@@ -573,7 +576,7 @@ class FortinetFirewallPlugin(
         return fwr
 
     def _make_default_firewall_rule_dict(self, tenant_id):
-        if tenant_id:
+        if tenant_id and self._fortigate["enable_default_fwrule"]:
             return {'id': tenant_id,
                     'tenant_id': tenant_id,
                     'name': '_default_rule_deny_all',

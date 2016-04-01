@@ -29,7 +29,7 @@ from neutron.plugins.common import constants as service_consts
 from neutron.plugins.ml2 import db
 from neutron.services.l3_router import l3_router_plugin as router
 
-from networking_fortinet._i18n import _LE
+from networking_fortinet._i18n import _, _LE
 from networking_fortinet.common import config
 from networking_fortinet.common import constants as const
 from networking_fortinet.common import resources

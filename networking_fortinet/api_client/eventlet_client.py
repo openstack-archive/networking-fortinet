@@ -15,13 +15,13 @@
 # under the License.
 #
 
-from neutron.i18n import _LE
 import time
 
 import eventlet
 eventlet.monkey_patch()
 from oslo_log import log as logging
 
+from networking_fortinet._i18n import _LE
 from networking_fortinet.api_client import base
 from networking_fortinet.api_client import eventlet_request
 
@@ -67,7 +67,7 @@ class EventletApiClient(base.ApiClientBase):
         self._conn_pool = eventlet.queue.PriorityQueue()
         self._next_conn_priority = 1
         for host, port, is_ssl in api_providers:
-            for _ in range(concurrent_connections):
+            for __ in range(concurrent_connections):
                 conn = self._create_connection(host, port, is_ssl)
                 self._conn_pool.put((self._next_conn_priority, conn))
                 self._next_conn_priority += 1

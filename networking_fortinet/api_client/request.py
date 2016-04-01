@@ -30,7 +30,7 @@ from oslo_utils import excutils
 import six
 import six.moves.urllib.parse as urlparse
 
-from networking_fortinet._i18n import _LI, _LW
+from networking_fortinet._i18n import _, _LI, _LW
 from networking_fortinet import api_client
 from networking_fortinet.api_client import templates
 
