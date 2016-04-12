@@ -13,7 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from tempest import config
+from oslo_config import cfg
+
 from tempest import exceptions
 from tempest.lib.common import ssh
 from tempest.lib import exceptions as lib_exc
@@ -22,7 +23,7 @@ from tempest.services.network import resources as net_resources
 
 from networking_fortinet.tests.tempest_plugin.tests import fwaas_client
 
-CONF = config.CONF
+CONF = cfg.CONF
 
 
 class FWaaSScenarioTest(fwaas_client.FWaaSClientMixin,
@@ -35,6 +36,10 @@ class FWaaSScenarioTest(fwaas_client.FWaaSClientMixin,
                            check_reverse_icmp_ip=None,
                            should_reverse_connect=True,
                            check_reverse_curl=False):
+        # if default allow is enabled as default by fgt fwaas, reverse
+        # connection should always be available.
+        if self._default_allow():
+            should_reverse_connect = True
         if should_connect:
             msg = "Timed out waiting for %s to become reachable" % ip_address
         else:
@@ -61,9 +66,10 @@ class FWaaSScenarioTest(fwaas_client.FWaaSClientMixin,
                         client.exec_command(cmd)
                         self.assertTrue(should_reverse_connect,
                                         "Unexpectedly reachable (reverse)")
-                    except lib_exc.SSHExecCommandFailed:
+                    except (lib_exc.SSHExecCommandFailed,
+                            lib_exc.TimeoutException) as e:
                         if should_reverse_connect:
-                            raise
+                            raise e
                     if check_reverse_curl:
                         cmd1 = 'curl http://httpstat.us/200 |grep "200 OK"'
                         cmd2 = 'curl http://www.eicar.org/download/eicar.com|\
@@ -72,9 +78,10 @@ class FWaaSScenarioTest(fwaas_client.FWaaSClientMixin,
                             client.exec_command(cmd1)
                             self.assertTrue(should_reverse_connect,
                                             "Unexpectedly reachable (reverse)")
-                        except lib_exc.SSHExecCommandFailed:
+                        except (lib_exc.SSHExecCommandFailed,
+                                lib_exc.TimeoutException) as e:
                             if should_reverse_connect:
-                                raise
+                                raise e
                         # test virus file download should be blocked by default
                         # security profile enabled.
                         try:
@@ -82,12 +89,17 @@ class FWaaSScenarioTest(fwaas_client.FWaaSClientMixin,
                             self.assertFalse(should_reverse_connect,
                                             "Unexpectedly reachable (reverse)")
                             raise
-                        except lib_exc.SSHExecCommandFailed:
+                        except lib_exc.SSHExecCommandFailed as e:
+                            if not should_reverse_connect:
+                                raise e
+                        except lib_exc.TimeoutException as e:
                             if should_reverse_connect:
-                                pass
+                                raise e
             except lib_exc.SSHTimeout:
                 if should_connect:
                     raise
+            except Exception as e:
+                raise e
 
     def create_networks(self, client=None, networks_client=None,
                         subnets_client=None, tenant_id=None,
@@ -159,3 +171,9 @@ class FWaaSScenarioTest(fwaas_client.FWaaSClientMixin,
         else:
             raise Exception("Neither of 'public_router_id' or "
                             "'public_network_id' has been defined.")
+
+    def _default_allow(self):
+        if CONF.fortigate.enable_default_fwrule:
+            return False
+        else:
+            return True

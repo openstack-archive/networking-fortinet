@@ -17,6 +17,8 @@ import os
 
 from tempest.test_discover import plugins
 
+from networking_fortinet.tests.tempest_plugin import config as project_config
+
 
 class NeutronFortigateFWaaSPlugin(plugins.TempestPlugin):
     def get_opt_lists(self):
@@ -32,4 +34,4 @@ class NeutronFortigateFWaaSPlugin(plugins.TempestPlugin):
         return (test_dir, top_level_dir)
 
     def register_opts(self, conf):
-        return
+        project_config.register_opts()

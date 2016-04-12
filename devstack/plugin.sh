@@ -118,6 +118,7 @@ function configure_tempest_for_fortigate_plugin {
     # to get an ip address in our ci system.
     if is_service_enabled tempest; then
         iniset /$TEMPEST_CONFIG compute ping_timeout $PING_TIMEOUT
+        iniset /$TEMPEST_CONFIG fortigate enable_default_fwrule $Q_FORTINET_FWAAS_ENABLE_DEFAULT_FWRULE
     fi
 }
 

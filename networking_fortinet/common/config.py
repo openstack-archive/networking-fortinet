@@ -12,7 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from neutron.agent.common import config
 from oslo_config import cfg
 
 from networking_fortinet._i18n import _
@@ -67,8 +66,6 @@ ML2_FORTINET = [
 ]
 
 cfg.CONF.register_opts(ML2_FORTINET, "ml2_fortinet")
-config.register_agent_state_opts_helper(cfg.CONF)
-config.register_root_helper(cfg.CONF)
 
 fgt_info = {
     'address': cfg.CONF.ml2_fortinet.address,
