@@ -66,10 +66,9 @@ class FWaaSScenarioTest(fwaas_client.FWaaSClientMixin,
                         client.exec_command(cmd)
                         self.assertTrue(should_reverse_connect,
                                         "Unexpectedly reachable (reverse)")
-                    except (lib_exc.SSHExecCommandFailed,
-                            lib_exc.TimeoutException) as e:
+                    except lib_exc.SSHExecCommandFailed:
                         if should_reverse_connect:
-                            raise e
+                            raise
                     if check_reverse_curl:
                         cmd1 = 'curl http://httpstat.us/200 |grep "200 OK"'
                         cmd2 = 'curl http://www.eicar.org/download/eicar.com|\
@@ -78,10 +77,9 @@ class FWaaSScenarioTest(fwaas_client.FWaaSClientMixin,
                             client.exec_command(cmd1)
                             self.assertTrue(should_reverse_connect,
                                             "Unexpectedly reachable (reverse)")
-                        except (lib_exc.SSHExecCommandFailed,
-                                lib_exc.TimeoutException) as e:
+                        except lib_exc.SSHExecCommandFailed:
                             if should_reverse_connect:
-                                raise e
+                                raise
                         # test virus file download should be blocked by default
                         # security profile enabled.
                         try:
@@ -89,21 +87,16 @@ class FWaaSScenarioTest(fwaas_client.FWaaSClientMixin,
                             self.assertFalse(should_reverse_connect,
                                             "Unexpectedly reachable (reverse)")
                             raise
-                        except lib_exc.SSHExecCommandFailed as e:
-                            if not should_reverse_connect:
-                                raise e
-                        except lib_exc.TimeoutException as e:
+                        except lib_exc.SSHExecCommandFailed:
                             if should_reverse_connect:
-                                raise e
+                                pass
             except lib_exc.SSHTimeout:
                 if should_connect:
                     raise
-            except Exception as e:
-                raise e
 
-    def create_networks(self, client=None, networks_client=None,
-                        subnets_client=None, tenant_id=None,
-                        dns_nameservers=None):
+    def create_networks(self, networks_client=None,
+                        routers_client=None, subnets_client=None,
+                        tenant_id=None, dns_nameservers=None):
         """Create a network with a subnet connected to a router.
         The baremetal driver is a special case since all nodes are
         on the same shared network.
@@ -127,12 +120,14 @@ class FWaaSScenarioTest(fwaas_client.FWaaSClientMixin,
             subnet = None
         else:
             network = self._create_network(
-                client=client, networks_client=networks_client,
+                networks_client=networks_client,
                 tenant_id=tenant_id)
-            router = self._get_router(client=client, tenant_id=tenant_id)
+            router = self._get_router(client=routers_client,
+                                      tenant_id=tenant_id)
 
-            subnet_kwargs = dict(network=network, client=client,
-                                 subnets_client=subnets_client)
+            subnet_kwargs = dict(network=network,
+                                 subnets_client=subnets_client,
+                                 routers_client=routers_client)
             # use explicit check because empty list is a valid option
             if dns_nameservers is not None:
                 subnet_kwargs['dns_nameservers'] = dns_nameservers

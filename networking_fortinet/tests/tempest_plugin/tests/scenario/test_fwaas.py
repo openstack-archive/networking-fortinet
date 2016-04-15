@@ -28,9 +28,9 @@ load_tests = testscenarios.load_tests_apply_scenarios
 
 class TestFortigateFWaaS(base.FWaaSScenarioTest):
     scenarios = [
-        ('without router insersion', {
-            'router_insertion': False,
-        }),
+        # ('without router insersion', {
+        #     'router_insertion': False,
+        # }),
         ('with router insersion', {
             'router_insertion': True,
         }),
