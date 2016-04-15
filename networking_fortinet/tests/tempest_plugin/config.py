@@ -23,4 +23,5 @@ FORTIGATE = [
                        ' otherwise users need to add it manaully.'))
 ]
 
-cfg.CONF.register_opts(FORTIGATE, "fortigate")
+def register_opts():
+    cfg.CONF.register_opts(FORTIGATE, "fortigate")
