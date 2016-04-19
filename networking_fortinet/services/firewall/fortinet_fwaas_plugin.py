@@ -251,8 +251,14 @@ class FortinetFirewallPlugin(
                   "id =%(id)s, firewall_policy=%(fp)s",
                   {'id': id, 'fp': firewall_policy})
         self._ensure_update_firewall_policy(context, id)
+        firewall_policy_old = self.get_firewall_policy(context, id)
+        firewall_rule_ids = firewall_policy_old.get('firewall_rules', [])
+        tenant_id = firewall_policy_old.get('tenant_id', None)
         fwp = super(FortinetFirewallPlugin,
                     self).update_firewall_policy(context, id, firewall_policy)
+        for fwr_id in firewall_rule_ids:
+            fw_rule = self.get_firewall_rule(context, fwr_id)
+            self._delete_firewall_rule(context, tenant_id, **fw_rule)
         self._rpc_update_firewall_policy(context, id)
         return fwp
 

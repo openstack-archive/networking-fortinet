@@ -482,7 +482,6 @@ class TestFortigateFWaaS(base.FWaaSScenarioTest):
                                   confirm_blocked=self._confirm_ssh_blocked,
                                   confirm_allowed=self._confirm_allow_novirus)
 
-    @decorators.skip_because(bug="0368418")
     @test.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede1')
     def test_firewall_empty_policy(self):
         if not self._default_allow():
