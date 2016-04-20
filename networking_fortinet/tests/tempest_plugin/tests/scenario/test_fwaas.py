@@ -78,6 +78,26 @@ class TestFortigateFWaaS(base.FWaaSScenarioTest):
         self.firewall_policies_client.update_firewall_policy(
             firewall_policy_id=ctx['fw_policy']['id'], firewall_rules=[])
 
+    def _update_policy_with_allow_rule(self, ctx):
+        rules = [
+            self.create_firewall_rule(
+                destination_ip_address=ctx['server1_fixed_ip'],
+                action="allow"),
+            self.create_firewall_rule(
+                source_ip_address=ctx['server1_fixed_ip'],
+                action="allow"),
+        ]
+        rule_ids = [r['id'] for r in rules]
+        self.firewall_policies_client.update_firewall_policy(
+            firewall_policy_id=ctx['fw_policy']['id'],
+            firewall_rules=rule_ids)
+        for rule_id in rule_ids:
+            self.addCleanup(
+                self._remove_rule_and_wait,
+                firewall_id=ctx['fw']['id'],
+                firewall_policy_id=ctx['fw_policy']['id'],
+                firewall_rule_id=rule_id)
+
     def _all_disabled_rules(self, **kwargs):
         # NOTE(yamamoto): a policy whose rules are all disabled would deny all
         fw_rule = self.create_firewall_rule(action="allow", enabled=False)
@@ -475,20 +495,26 @@ class TestFortigateFWaaS(base.FWaaSScenarioTest):
                                   confirm_blocked=self._confirm_ssh_blocked,
                                   confirm_allowed=self._confirm_allow_novirus)
 
-    @test.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede3')
+    @test.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede4')
     def test_firewall_update_ssh_policy_by_proto(self):
         self._test_firewall_basic(block=self._block_ssh,
                                   allow=self._update_block_ssh_rule_by_proto,
                                   confirm_blocked=self._confirm_ssh_blocked,
                                   confirm_allowed=self._confirm_allow_novirus)
 
-    @test.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede1')
+    @test.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede5')
     def test_firewall_empty_policy(self):
         if not self._default_allow():
             self._test_firewall_basic(block=self._empty_policy)
         else:
             self._test_firewall_basic(block=self._block_ip,
                                       allow=self._empty_existing_policy)
+
+    @test.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede6')
+    def test_firewall_update_policy_with_new_rule(self):
+        self._test_firewall_basic(block=self._block_ip,
+                                  allow=self._update_policy_with_allow_rule,
+                                  confirm_allowed=self._confirm_allow_novirus)
 
     @decorators.skip_because(bug="0363573")
     @test.idempotent_id('30174d2a-820b-4939-85e2-49c735f7de0c')
