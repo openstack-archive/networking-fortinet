@@ -400,10 +400,9 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
         if not subnet['gateway_ip']:
             msg = _('Subnet for router interface must have a gateway IP')
             raise n_exc.BadRequest(resource='router', msg=msg)
-        self._check_for_dup_router_subnet(context, router,
-                                          subnet['network_id'],
-                                          subnet_id,
-                                          subnet['cidr'])
+        self._check_for_dup_router_subnets(context, router,
+                                           subnet['network_id'],
+                                           [subnet])
         fixed_ip = {'ip_address': subnet['gateway_ip'],
                     'subnet_id': subnet['id']}
         return (self._core_plugin.create_port(context, {

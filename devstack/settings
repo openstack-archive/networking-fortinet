@@ -1,2 +1,3 @@
 Q_ML2_PLUGIN_MECHANISM_DRIVERS=fortinet,openvswitch
+Q_USE_SECGROUP=False
 enable_service fortinet-neutron

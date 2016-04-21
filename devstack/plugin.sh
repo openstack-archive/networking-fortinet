@@ -122,6 +122,11 @@ function configure_tempest_for_fortigate_plugin {
     fi
 }
 
+function has_neutron_plugin_security_group {
+    # 1 means False here
+    return 1
+}
+
 if is_service_enabled fortinet-neutron; then
     if [[ "$1" == "source" ]]; then
         # no-op
