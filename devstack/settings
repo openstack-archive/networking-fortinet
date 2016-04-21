@@ -1,2 +1,4 @@
 Q_ML2_PLUGIN_MECHANISM_DRIVERS=fortinet,openvswitch
+LIBVIRT_FIREWALL_DRIVER="nova.virt.firewall.NoopFirewallDriver"
+Q_USE_SECGROUP=False
 enable_service fortinet-neutron
