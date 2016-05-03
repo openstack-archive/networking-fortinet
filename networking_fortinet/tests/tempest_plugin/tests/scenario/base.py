@@ -19,7 +19,7 @@ from tempest import exceptions
 from tempest.lib.common import ssh
 from tempest.lib import exceptions as lib_exc
 from tempest.scenario import manager
-from tempest.services.network import resources as net_resources
+from tempest.scenario import network_resources
 
 from networking_fortinet.tests.tempest_plugin.tests import fwaas_client
 
@@ -150,15 +150,16 @@ class FWaaSScenarioTest(fwaas_client.FWaaSClientMixin,
         network_id = CONF.network.public_network_id
         if router_id:
             body = client.show_router(router_id)
-            return net_resources.AttributeDict(**body['router'])
+            return network_resources.AttributeDict(**body['router'])
         elif network_id:
             # fortigate plugin only allow one router per tenant, so if
             # a router already exists, use it.
             routers_list = client.list_routers(tenant_id=tenant_id)
             if len(routers_list['routers']) == 1:
                 rt = routers_list['routers'][0]
-                router = net_resources.DeletableRouter(routers_client=client,
-                                                       **rt)
+                router = network_resources.DeletableRouter(
+                             routers_client=client,
+                             **rt)
             else:
                 router = self._create_router(client, tenant_id)
             router.set_gateway(network_id)
