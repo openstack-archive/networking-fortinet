@@ -19,7 +19,7 @@ from tempest import exceptions
 from tempest.lib.common import ssh
 from tempest.lib import exceptions as lib_exc
 from tempest.scenario import manager
-from tempest.services.network import resources as net_resources
+from tempest.scenario import net_resources
 
 from networking_fortinet.tests.tempest_plugin.tests import fwaas_client
 
