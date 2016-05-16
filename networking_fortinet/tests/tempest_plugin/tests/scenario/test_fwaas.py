@@ -36,6 +36,14 @@ class TestFortigateFWaaS(base.FWaaSScenarioTest):
         }),
     ]
 
+    @classmethod
+    def skip_checks(cls):
+        super(TestFortigateFWaaS, cls).skip_checks()
+        if not CONF.network.public_network_id:
+            msg = ('Either project_networks_reachable must be "true", or '
+                   'public_network_id must be defined.')
+            raise cls.skipException(msg)
+
     def setUp(self):
         super(TestFortigateFWaaS, self).setUp()
         required_exts = ['fwaas', 'security-group', 'router']
