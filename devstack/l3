@@ -1,0 +1,84 @@
+#!/bin/bash
+
+# A trimmed copy of devstack/lib/neutron_plugins/services/l3
+# for bug/1582119
+
+function create_neutron_initial_network {
+    local project_id
+    project_id=$(openstack project list | grep " demo " | get_field 1)
+    die_if_not_set $LINENO project_id "Failure retrieving project_id for demo"
+
+    NET_ID=$(neutron --os-cloud devstack-admin --os-region "$REGION_NAME" net-create --tenant-id $project_id "$PRIVATE_NETWORK_NAME" | grep ' id ' | get_field 2)
+    die_if_not_set $LINENO NET_ID "Failure creating NET_ID for $PRIVATE_NETWORK_NAME $project_id"
+
+    if [[ "$IP_VERSION" =~ 4.* ]]; then
+        # Create IPv4 private subnet
+        SUBNET_ID=$(_neutron_create_private_subnet_v4 $project_id)
+    fi
+
+    AUTO_ALLOCATE_EXT=$(neutron --os-cloud devstack-admin --os-region "$REGION_NAME" ext-list | grep 'auto-allocated-topology' | get_field 1)
+    SUBNETPOOL_EXT=$(neutron --os-cloud devstack-admin --os-region "$REGION_NAME" ext-list | grep 'subnet_allocation' | get_field 1)
+
+    # Create a router, and add the private subnet as one of its interfaces
+    # create a tenant-owned router.
+    ROUTER_ID=$(neutron --os-cloud devstack-admin --os-region "$REGION_NAME" router-create --tenant-id $project_id $Q_ROUTER_NAME | grep ' id ' | get_field 2)
+    die_if_not_set $LINENO ROUTER_ID "Failure creating ROUTER_ID for $project_id $Q_ROUTER_NAME"
+
+    # if the extension is available, then mark the external
+    # network as default, and provision default subnetpools
+    EXTERNAL_NETWORK_FLAGS="--router:external"
+    if [[ -n $AUTO_ALLOCATE_EXT && -n $SUBNETPOOL_EXT ]]; then
+        EXTERNAL_NETWORK_FLAGS="$EXTERNAL_NETWORK_FLAGS --is-default"
+        if [[ "$IP_VERSION" =~ 4.* ]]; then
+            SUBNETPOOL_V4_ID=$(neutron --os-cloud devstack-admin --os-region "$REGION_NAME" subnetpool-create $SUBNETPOOL_NAME --default-prefixlen $SUBNETPOOL_SIZE_V4 --pool-prefix $SUBNETPOOL_PREFIX_V4 --shared --is-default=True | grep ' id ' | get_field 2)
+        fi
+    fi
+    # Create an external network, and a subnet. Configure the external network as router gw
+    EXT_NET_ID=$(neutron --os-cloud devstack-admin --os-region "$REGION_NAME" net-create "$PUBLIC_NETWORK_NAME" -- $EXTERNAL_NETWORK_FLAGS | grep ' id ' | get_field 2)
+    die_if_not_set $LINENO EXT_NET_ID "Failure creating EXT_NET_ID for $PUBLIC_NETWORK_NAME"
+
+    if [[ "$IP_VERSION" =~ 4.* ]]; then
+        # Configure router for IPv4 public access
+        _neutron_configure_router_v4
+    fi
+}
+
+# Create private IPv4 subnet
+function _neutron_create_private_subnet_v4 {
+    local project_id=$1
+    local subnet_params="--tenant-id $project_id "
+    subnet_params+="--ip_version 4 "
+    subnet_params+="--gateway $NETWORK_GATEWAY "
+    subnet_params+="--name $PRIVATE_SUBNET_NAME "
+    subnet_params+="$NET_ID $FIXED_RANGE"
+    local subnet_id
+    subnet_id=$(neutron --os-cloud devstack-admin --os-region "$REGION_NAME" subnet-create $subnet_params | grep ' id ' | get_field 2)
+    die_if_not_set $LINENO subnet_id "Failure creating private IPv4 subnet for $project_id"
+    echo $subnet_id
+}
+
+# Create public IPv4 subnet
+function _neutron_create_public_subnet_v4 {
+    local subnet_params+="--ip_version 4 "
+    subnet_params+="${Q_FLOATING_ALLOCATION_POOL:+--allocation-pool $Q_FLOATING_ALLOCATION_POOL} "
+    subnet_params+="--gateway $PUBLIC_NETWORK_GATEWAY "
+    subnet_params+="--name $PUBLIC_SUBNET_NAME "
+    subnet_params+="$EXT_NET_ID $FLOATING_RANGE "
+    subnet_params+="-- --enable_dhcp=False"
+    local id_and_ext_gw_ip
+    id_and_ext_gw_ip=$(neutron --os-cloud devstack-admin --os-region "$REGION_NAME" subnet-create $subnet_params | grep -e 'gateway_ip' -e ' id ')
+    die_if_not_set $LINENO id_and_ext_gw_ip "Failure creating public IPv4 subnet"
+    echo $id_and_ext_gw_ip
+}
+
+# Configure neutron router for IPv4 public access
+function _neutron_configure_router_v4 {
+    neutron --os-cloud devstack-admin --os-region "$REGION_NAME" router-interface-add $ROUTER_ID $SUBNET_ID
+    # Create a public subnet on the external network
+    local id_and_ext_gw_ip
+    id_and_ext_gw_ip=$(_neutron_create_public_subnet_v4 $EXT_NET_ID)
+    local ext_gw_ip
+    ext_gw_ip=$(echo $id_and_ext_gw_ip  | get_field 2)
+    # Configure the external network as the default router gateway
+    neutron --os-cloud devstack-admin --os-region "$REGION_NAME" router-gateway-set $ROUTER_ID $EXT_NET_ID
+}
