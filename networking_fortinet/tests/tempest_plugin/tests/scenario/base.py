@@ -28,7 +28,6 @@ CONF = cfg.CONF
 
 class FWaaSScenarioTest(fwaas_client.FWaaSClientMixin,
                         manager.NetworkScenarioTest):
-    _delete_wrapper = manager.NetworkScenarioTest.delete_wrapper
 
     def check_connectivity(self, ip_address, username=None, private_key=None,
                            should_connect=True,
