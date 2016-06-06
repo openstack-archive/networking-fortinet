@@ -14,9 +14,10 @@
 #    under the License.
 
 from tempest.api.network import base
+from tempest.lib.common.utils import test_utils
 
 from networking_fortinet.tests.tempest_plugin.tests import fwaas_client
 
 
 class BaseFWaaSTest(fwaas_client.FWaaSClientMixin, base.BaseNetworkTest):
-    _delete_wrapper = base.BaseNetworkTest._try_delete_resource
+    _delete_wrapper = test_utils.call_and_ignore_notfound_exc
