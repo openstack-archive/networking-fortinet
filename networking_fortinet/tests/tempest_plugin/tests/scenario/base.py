@@ -18,8 +18,8 @@ from oslo_config import cfg
 from tempest import exceptions
 from tempest.lib.common import ssh
 from tempest.lib import exceptions as lib_exc
+from tempest.lib.common.utils import test_utils
 from tempest.scenario import manager
-from tempest.scenario import network_resources
 
 from networking_fortinet.tests.tempest_plugin.tests import fwaas_client
 
@@ -131,7 +131,15 @@ class FWaaSScenarioTest(fwaas_client.FWaaSClientMixin,
             if dns_nameservers is not None:
                 subnet_kwargs['dns_nameservers'] = dns_nameservers
             subnet = self._create_subnet(**subnet_kwargs)
-            subnet.add_to_router(router.id)
+            if not routers_client:
+                routers_client = self.routers_client
+            routers_client.add_router_interface(router['id'],
+                                                subnet_id=subnet['id'])
+            # save a cleanup job to remove this association between
+            # router and subnet
+            self.addCleanup(test_utils.call_and_ignore_notfound_exc,
+                            routers_client.remove_router_interface, router['id'],
+                            subnet_id=subnet['id'])
         return network, subnet, router
 
     def _get_router(self, client=None, tenant_id=None):
@@ -149,19 +157,17 @@ class FWaaSScenarioTest(fwaas_client.FWaaSClientMixin,
         network_id = CONF.network.public_network_id
         if router_id:
             body = client.show_router(router_id)
-            return network_resources.AttributeDict(**body['router'])
+            return body['router']
         elif network_id:
             # fortigate plugin only allow one router per tenant, so if
             # a router already exists, use it.
             routers_list = client.list_routers(tenant_id=tenant_id)
             if len(routers_list['routers']) == 1:
-                rt = routers_list['routers'][0]
-                router = network_resources.DeletableRouter(
-                             routers_client=client,
-                             **rt)
+                router = routers_list['routers'][0]
             else:
                 router = self._create_router(client, tenant_id)
-            router.set_gateway(network_id)
+            kwargs = {'external_gateway_info': dict(network_id=network_id)}
+            router = client.update_router(router['id'], **kwargs)['router']
             return router
         else:
             raise Exception("Neither of 'public_router_id' or "
