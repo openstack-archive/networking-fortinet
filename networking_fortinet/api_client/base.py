@@ -45,8 +45,16 @@ class ApiClientBase(object):
 
     def _create_connection(self, host, port, is_ssl):
         if is_ssl:
-            return httplib.HTTPSConnection(host, port,
-                                           timeout=self._connect_timeout)
+            try:
+                import ssl
+                context = ssl._create_unverified_context(
+                    cert_reqs=ssl.CERT_NONE)
+                return httplib.HTTPSConnection(host, port,
+                                           timeout=self._connect_timeout,
+                                           context=context)
+            except (ImportError, AttributeError):
+                return httplib.HTTPSConnection(host, port,
+                                               timeout=self._connect_timeout)
         return httplib.HTTPConnection(host, port,
                                       timeout=self._connect_timeout)
 
