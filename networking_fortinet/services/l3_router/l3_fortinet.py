@@ -72,7 +72,7 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
         self.enable_fwaas = 'fwaas_fortinet' in cfg.CONF.service_plugins
 
     def create_router(self, context, router):
-        LOG.debug("create_router: router=%s" % (router))
+        LOG.debug("create_router: router=%s", router)
         # Limit one router per tenant
         if not router.get('router', None):
             return
@@ -101,7 +101,7 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                 update_router(context, id, router))
 
     def delete_router(self, context, id):
-        LOG.debug("delete_router: router id=%s" % (id))
+        LOG.debug("delete_router: router id=%s", id)
         try:
             if self.enable_fwaas:
                 fw_plugin = manager.NeutronManager.get_service_plugins().get(

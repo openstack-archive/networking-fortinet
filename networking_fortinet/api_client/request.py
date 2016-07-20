@@ -168,7 +168,7 @@ class ApiRequest(object):
                         # a request to authenticate, we should abort the
                         # request since there is no point in retrying.
                         self._abort = True
-                    LOG.debug("self._api_client=%s" % self._api_client)
+                    LOG.debug("self._api_client=%s", self._api_client)
                     # If request is unauthorized, clear the session cookie
                     # for the current provider so that subsequent requests
                     # to the same provider triggers re-authentication.
