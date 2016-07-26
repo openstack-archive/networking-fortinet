@@ -112,7 +112,6 @@ function configure_fortigate_neutron_ml2_driver {
             br-${Q_FORTINET_TENANT_INTERFACE} ${Q_FORTINET_TENANT_INTERFACE}
         sudo ip link set br-${Q_FORTINET_TENANT_INTERFACE} up
         sudo ip link set ${Q_FORTINET_TENANT_INTERFACE} up
-        iniset /$Q_PLUGIN_CONF_FILE ovs of_interface ovs-ofctl
     fi
 }
 
