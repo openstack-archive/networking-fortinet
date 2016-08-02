@@ -125,18 +125,12 @@ SET_VLAN_INTERFACE = """
 # Delete VLAN (vlan id)
 DELETE_VLAN_INTERFACE = """
 {
-    "path": "/api/v2/cmdb/system/interface/{{ name }}",
-    "method": "DELETE",
-    "body": {
-        "name": "interface",
-        "json": {
-            {% if vdom is defined %}
-                "vdom": "{{ vdom }}"
-            {% else %}
-                "vdom": "root"
-            {% endif %}
-        }
-    }
+    {% if vdom is defined %}
+        "path":"/api/v2/cmdb/system/interface/{{ name }}/?vdom={{ vdom }}",
+    {% else %}
+        "path":"/api/v2/cmdb/system/interface/{{ name }}",
+    {% endif %}
+    "method": "DELETE"
 }
 """
 
@@ -198,13 +192,13 @@ ADD_DHCP_SERVER = """
 
 SET_DHCP_SERVER = """
 {
-    "path":"/api/v2/cmdb/system.dhcp/server/{{ id }}/",
+    {% if vdom is defined %}
+        "path":"/api/v2/cmdb/system.dhcp/server/{{ id }}/?vdom={{ vdom }}",
+    {% else %}
+        "path":"/api/v2/cmdb/system.dhcp/server/{{ id }}",
+    {% endif %}
     "method": "PUT",
     "body": {
-        "name": "server",
-        {% if vdom is defined %}
-        "vdom": "{{ vdom }}",
-        {% endif %}
         "json": {
             "status":"enable",
             {% if dns_nameservers is defined and dns_nameservers %}
@@ -234,17 +228,12 @@ SET_DHCP_SERVER = """
 
 DELETE_DHCP_SERVER = """
 {
-    "path":"/api/v2/cmdb/system.dhcp/server/{{ id }}/",
-    "method": "DELETE",
-    "body": {
-        "name": "server",
-        {% if vdom is defined %}
-        "vdom": "{{ vdom }}",
-        {% endif %}
-        "id": "{{ id }}",
-        "json": {
-        }
-    }
+    {% if vdom is defined %}
+        "path":"/api/v2/cmdb/system.dhcp/server/{{ id }}/?vdom={{ vdom }}",
+    {% else %}
+        "path":"/api/v2/cmdb/system.dhcp/server/{{ id }}",
+    {% endif %}
+    "method": "DELETE"
 }
 """
 
@@ -254,13 +243,13 @@ GET_DHCP_SERVER = """
         {% if vdom is defined %}
             "path":"/api/v2/cmdb/system.dhcp/server/{{ id }}/?vdom={{ vdom }}",
         {% else %}
-            "path":"/api/v2/cmdb/system.dhcp/server/{{ id }}/",
+            "path":"/api/v2/cmdb/system.dhcp/server/{{ id }}",
         {% endif %}
     {% else %}
         {% if vdom is defined %}
             "path":"/api/v2/cmdb/system.dhcp/server/?vdom={{ vdom }}",
         {% else %}
-            "path":"/api/v2/cmdb/system.dhcp/server/",
+            "path":"/api/v2/cmdb/system.dhcp/server",
         {% endif %}
     {% endif %}
     "method": "GET"
@@ -270,12 +259,13 @@ GET_DHCP_SERVER = """
 
 SET_DHCP_SERVER_RSV_ADDR = """
 {
-    "path":"/api/v2/cmdb/system.dhcp/server/{{ id }}/reserved-address",
+    {% if vdom is defined %}
+        "path":"/api/v2/cmdb/system.dhcp/server/{{ id }}/?vdom={{ vdom }}",
+    {% else %}
+        "path":"/api/v2/cmdb/system.dhcp/server/{{ id }}",
+    {% endif %}
     "method": "PUT",
     "body": {
-        {% if vdom is defined %}
-        "vdom": "{{ vdom }}",
-        {% endif %}
         "json": {
             "reserved-address": {{ reserved_address }}
         }
@@ -300,9 +290,7 @@ ADD_VDOM = """
 DELETE_VDOM = """
 {
     "path":"/api/v2/cmdb/system/vdom/{{ name }}",
-    "method": "DELETE",
-    "body": {
-    }
+    "method": "DELETE"
 }
 """
 
@@ -315,10 +303,9 @@ GET_VDOM = """
 
 ADD_VDOM_LINK = """
 {
-    "path":"/api/v2/cmdb/system/vdom-link/",
+    "path":"/api/v2/cmdb/system/vdom-link",
     "method": "POST",
     "body": {
-        "name": "vdom-link",
         "json": {
             "name":"{{ name }}"
         }
@@ -329,9 +316,7 @@ ADD_VDOM_LINK = """
 DELETE_VDOM_LINK = """
 {
     "path": "/api/v2/cmdb/system/vdom-link/{{ name }}",
-    "method": "DELETE",
-    "body": {
-    }
+    "method": "DELETE"
 }
 """
 
@@ -359,7 +344,7 @@ ADD_VDOM_LNK_INTERFACE = """
 
 ADD_ROUTER_STATIC = """
 {
-    "path": "/api/v2/cmdb/router/static/",
+    "path": "/api/v2/cmdb/router/static",
     "method": "POST",
     "body": {
         {% if vdom is defined %}
@@ -378,14 +363,13 @@ ADD_ROUTER_STATIC = """
 
 SET_ROUTER_STATIC = """
 {
-    "path": "/api/v2/cmdb/router/static/{{ id }}/",
+    {% if vdom is defined %}
+        "path": "/api/v2/cmdb/router/static/{{ id }}/?vdom={{ vdom }}",
+    {% else %}
+        "path": "/api/v2/cmdb/router/static/{{ id }}",
+    {% endif %}
     "method": "PUT",
     "body": {
-        {% if vdom is defined %}
-            "vdom": "{{ vdom }}",
-        {% else %}
-            "vdom": "root",
-        {% endif %}
         "json": {
             "dst": "{{ dst }}",
             "device": "{{ device }}",
@@ -398,17 +382,12 @@ SET_ROUTER_STATIC = """
 
 DELETE_ROUTER_STATIC = """
 {
-    "path": "/api/v2/cmdb/router/static/{{ id }}/",
-    "method": "DELETE",
-    "body": {
-        {% if vdom is defined %}
-            "vdom": "{{ vdom }}",
-        {% else %}
-            "vdom": "root",
-        {% endif %}
-        "json": {
-        }
-    }
+    {% if vdom is defined %}
+        "path": "/api/v2/cmdb/router/static/{{ id }}/?vdom={{ vdom }}",
+    {% else %}
+        "path": "/api/v2/cmdb/router/static/{{ id }}",
+    {% endif %}
+    "method": "DELETE"
 }
 """
 
@@ -546,14 +525,13 @@ ADD_FIREWALL_POLICY = """
 
 SET_FIREWALL_POLICY = """
 {
-    "path": "/api/v2/cmdb/firewall/policy/{{ id }}/",
+    {% if vdom is defined %}
+        "path": "/api/v2/cmdb/firewall/policy/{{ id }}/?vdom={{ vdom }}",
+    {% else %}
+        "path": "/api/v2/cmdb/firewall/policy/{{ id }}",
+    {% endif %}
     "method": "PUT",
     "body": {
-        {% if vdom is defined %}
-            "vdom": "{{ vdom }}",
-        {% else %}
-            "vdom": "root",
-        {% endif %}
         "json": {
             {% if srcintf is defined %}
                 "srcintf": [
@@ -639,17 +617,12 @@ SET_FIREWALL_POLICY = """
 
 DELETE_FIREWALL_POLICY = """
 {
-    "path": "/api/v2/cmdb/firewall/policy/{{ id }}/",
-    "method": "DELETE",
-    "body": {
-        {% if vdom is defined %}
-            "vdom": "{{ vdom }}",
-        {% else %}
-            "vdom": "root",
-        {% endif %}
-        "json": {
-        }
-    }
+    {% if vdom is defined %}
+        "path": "/api/v2/cmdb/firewall/policy/{{ id }}/?vdom={{ vdom }}",
+    {% else %}
+        "path": "/api/v2/cmdb/firewall/policy/{{ id }}",
+    {% endif %}
+    "method": "DELETE"
 }
 """
 
@@ -675,14 +648,13 @@ GET_FIREWALL_POLICY = """
 
 MOVE_FIREWALL_POLICY = """
 {
-    "path": "/api/v2/cmdb/firewall/policy/{{ id }}",
+    {% if vdom is defined %}
+        "path": "/api/v2/cmdb/firewall/policy/{{ id }}/?vdom={{ vdom }}",
+    {% else %}
+        "path": "/api/v2/cmdb/firewall/policy/{{ id }}",
+    {% endif %}
     "method": "PUT",
     "body": {
-        {% if vdom is defined %}
-            "vdom": "{{ vdom }}",
-        {% else %}
-            "vdom": "root",
-        {% endif %}
         {% if before is defined %}
             "before": "{{ before }}",
         {% else %}
@@ -719,16 +691,12 @@ ADD_FIREWALL_VIP = """
 
 DELETE_FIREWALL_VIP = """
 {
-    "path":"/api/v2/cmdb/firewall/vip/{{ name }}",
-    "method": "DELETE",
-    "body": {
-        {% if vdom is defined %}
-            "vdom": "{{ vdom }}",
-        {% else %}
-            "vdom": "root",
-        {% endif %}
-        "name": "vip"
-    }
+    {% if vdom is defined %}
+        "path": "/api/v2/cmdb/firewall/vip/{{ name }}/?vdom={{ vdom }}",
+    {% else %}
+        "path": "/api/v2/cmdb/firewall/vip/{{ name }}",
+    {% endif %}
+    "method": "DELETE"
 }
 """
 
@@ -789,16 +757,12 @@ ADD_FIREWALL_IPPOOL = """
 
 DELETE_FIREWALL_IPPOOL = """
 {
-    "path":"/api/v2/cmdb/firewall/ippool/{{ name }}",
-    "method": "DELETE",
-    "body": {
-        {% if vdom is defined %}
-            "vdom": "{{ vdom }}",
-        {% else %}
-            "vdom": "root",
-        {% endif %}
-        "name": "ippool"
-    }
+    {% if vdom is defined %}
+        "path": "/api/v2/cmdb/firewall/ippool/{{ name }}/?vdom={{ vdom }}",
+    {% else %}
+        "path": "/api/v2/cmdb/firewall/ippool/{{ name }}/",
+    {% endif %}
+    "method": "DELETE"
 }
 """
 
@@ -849,15 +813,13 @@ ADD_FIREWALL_ADDRESS = """
 
 SET_FIREWALL_ADDRESS = """
 {
-    "path":"/api/v2/cmdb/firewall/address/{{ name }}",
+    {% if vdom is defined %}
+        "path": "/api/v2/cmdb/firewall/address/{{ name }}/?vdom={{ vdom }}",
+    {% else %}
+        "path": "/api/v2/cmdb/firewall/address/{{ name }}",
+    {% endif %}
     "method": "PUT",
     "body": {
-        {% if vdom is defined %}
-            "vdom": "{{ vdom }}",
-        {% else %}
-            "vdom": "root",
-        {% endif %}
-        "name": "address",
         "json": {
             {% if associated_interface is defined %}
                 "associated-interface": "{{ associated_interface }}",
@@ -876,16 +838,12 @@ SET_FIREWALL_ADDRESS = """
 
 DELETE_FIREWALL_ADDRESS = """
 {
-    "path":"/api/v2/cmdb/firewall/address/{{ name }}",
-    "method": "DELETE",
-    "body": {
-        {% if vdom is defined %}
-            "vdom": "{{ vdom }}",
-        {% else %}
-            "vdom": "root",
-        {% endif %}
-        "name": "address"
-    }
+    {% if vdom is defined %}
+        "path": "/api/v2/cmdb/firewall/address/{{ name }}/?vdom={{ vdom }}",
+    {% else %}
+        "path": "/api/v2/cmdb/firewall/address/{{ name }}",
+    {% endif %}
+    "method": "DELETE"
 }
 """
 
@@ -939,14 +897,13 @@ ADD_FIREWALL_ADDRGRP = """
 
 SET_FIREWALL_ADDRGRP = """
 {
-    "path": "/api/v2/cmdb/firewall/addrgrp/{{ name }}/",
+    {% if vdom is defined %}
+        "path": "/api/v2/cmdb/firewall/addrgrp/{{ name }}/?vdom={{ vdom }}",
+    {% else %}
+        "path": "/api/v2/cmdb/firewall/addrgrp/{{ name }}",
+    {% endif %}
     "method": "PUT",
     "body": {
-        {% if vdom is defined %}
-            "vdom": "{{ vdom }}",
-        {% else %}
-            "vdom": "root",
-        {% endif %}
         "json": {
             "member": [
             {% for member in members[:-1] %}
@@ -966,16 +923,12 @@ SET_FIREWALL_ADDRGRP = """
 
 DELETE_FIREWALL_ADDRGRP = """
 {
-    "path":"/api/v2/cmdb/firewall/addrgrp/{{ name }}",
-    "method": "DELETE",
-    "body": {
-        {% if vdom is defined %}
-            "vdom": "{{ vdom }}",
-        {% else %}
-            "vdom": "root",
-        {% endif %}
-        "name": "addrgrp"
-    }
+    {% if vdom is defined %}
+        "path": "/api/v2/cmdb/firewall/addrgrp/{{ name }}/?vdom={{ vdom }}",
+    {% else %}
+        "path": "/api/v2/cmdb/firewall/addrgrp/{{ name }}",
+    {% endif %}
+    "method": "DELETE"
 }
 """
 
@@ -1043,15 +996,13 @@ ADD_FIREWALL_SERVICE = """
 ## update firewall service custom
 SET_FIREWALL_SERVICE = """
 {
-    "path": "/api/v2/cmdb/firewall.service/custom/{{ name }}",
+    {% if vdom is defined %}
+        "path": "/api/v2/cmdb/firewall.service/custom/{{ name }}/?vdom={{ vdom }}",
+    {% else %}
+        "path": "/api/v2/cmdb/firewall.service/custom/{{ name }}",
+    {% endif %}
     "method": "PUT",
     "body": {
-        {% if vdom is defined %}
-            "vdom": "{{ vdom }}",
-        {% else %}
-            "vdom": "root",
-        {% endif %}
-        "name": "custom",
         "json": {
             {% if protocol is defined %}
                 "protocol": "{{ protocol }}",
@@ -1088,16 +1039,12 @@ SET_FIREWALL_SERVICE = """
 
 DELETE_FIREWALL_SERVICE = """
 {
-    "path":"/api/v2/cmdb/firewall.service/custom/{{ name }}",
-    "method": "DELETE",
-    "body": {
-        {% if vdom is defined %}
-            "vdom": "{{ vdom }}",
-        {% else %}
-            "vdom": "root",
-        {% endif %}
-        "name": "custom"
-    }
+    {% if vdom is defined %}
+        "path": "/api/v2/cmdb/firewall.service/custom/{{ name }}/?vdom={{ vdom }}",
+    {% else %}
+        "path": "/api/v2/cmdb/firewall.service/custom/{{ name }}",
+    {% endif %}
+    "method": "DELETE"
 }
 """
 
