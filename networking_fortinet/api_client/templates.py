@@ -267,10 +267,10 @@ GET_DHCP_SERVER = """
 }
 """
 
-
+## update the uri to sync wth the change on fortigate 5.4.1
 SET_DHCP_SERVER_RSV_ADDR = """
 {
-    "path":"/api/v2/cmdb/system.dhcp/server/{{ id }}/reserved-address",
+    "path":"/api/v2/cmdb/system.dhcp/server/{{ id }}",
     "method": "PUT",
     "body": {
         {% if vdom is defined %}
