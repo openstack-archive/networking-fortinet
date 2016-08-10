@@ -592,6 +592,8 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                             vdom=db_namespace.vdom,
                             floating_ip_address=db_fip.floating_ip_address,
                             vip_name=db_fip.floating_ip_address)
+            # TODO(jerryz): move this out of transaction.
+            setattr(context, 'GUARD_TRANSACTION', False)
             super(FortinetL3ServicePlugin, self).delete_floatingip(context, id)
             utils.delete_vlink(self, context, tenant_id)
             utils.delete_vdom(self, context, tenant_id=tenant_id)
