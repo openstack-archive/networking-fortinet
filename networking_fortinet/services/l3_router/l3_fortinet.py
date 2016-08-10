@@ -109,6 +109,8 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                 fw_plugin.update_firewall_for_delete_router(context, id)
             with context.session.begin(subtransactions=True):
                 router = fortinet_db.query_record(context, l3_db.Router, id=id)
+                # TODO(jerryz): move this out of transaction.
+                setattr(context, 'GUARD_TRANSACTION', False)
                 super(FortinetL3ServicePlugin, self).delete_router(context, id)
                 if getattr(router, 'tenant_id', None):
                     utils.delete_vlink(self, context, router.tenant_id)
@@ -185,8 +187,9 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                   "router_id=%(router_id)s "
                   "interface_info=%(interface_info)r",
                   {'router_id': router_id, 'interface_info': interface_info})
-
         with context.session.begin(subtransactions=True):
+            # TODO(jerryz): move this out of transaction.
+            setattr(context, 'GUARD_TRANSACTION', False)
             info = (super(FortinetL3ServicePlugin, self).
                     remove_router_interface(context, router_id,
                                             interface_info))
@@ -405,6 +408,8 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                                            [subnet])
         fixed_ip = {'ip_address': subnet['gateway_ip'],
                     'subnet_id': subnet['id']}
+        # TODO(jerryz): move this out of transaction.
+        setattr(context, 'GUARD_TRANSACTION', False)
         return (self._core_plugin.create_port(context, {
             'port':
             {'tenant_id': subnet['tenant_id'],
@@ -592,6 +597,8 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                             vdom=db_namespace.vdom,
                             floating_ip_address=db_fip.floating_ip_address,
                             vip_name=db_fip.floating_ip_address)
+            # TODO(jerryz): move this out of transaction.
+            setattr(context, 'GUARD_TRANSACTION', False)
             super(FortinetL3ServicePlugin, self).delete_floatingip(context, id)
             utils.delete_vlink(self, context, tenant_id)
             utils.delete_vdom(self, context, tenant_id=tenant_id)
