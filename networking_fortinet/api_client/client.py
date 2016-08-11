@@ -108,6 +108,8 @@ class FortiosApiClient(eventlet_client.EventletApiClient):
         status = response.status
         if status == 401:
             raise exception.UnAuthorizedRequest()
+        if status == 404:
+            raise exception.ResourceNotFound()
         # Fail-fast: Check for exception conditions and raise the
         # appropriate exceptions for known error codes.
         if status in exception.ERROR_MAPPINGS:

@@ -201,9 +201,9 @@ class ApiRequest(object):
             # the conn to be released with is_conn_error == True
             # which puts the conn on the back of the client's priority
             # queue.
-            if (response.status == 500 and
-                response.status > 501):
-                LOG.warning(_LW("[%(rid)d] Request '%(method)s %(url)s' "
+            if (response.status not in [502,503,504] and
+                response.status >= 500):
+                LOG.error(_LE("[%(rid)d] Request '%(method)s %(url)s' "
                                 "received: %(status)s"),
                             {'rid': self._rid(), 'method': self._method,
                              'url': self._url, 'status': response.status})

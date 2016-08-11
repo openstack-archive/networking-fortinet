@@ -90,10 +90,6 @@ def fourZeroZero(response=None):
     raise BadRequest()
 
 
-def fourZeroFour(response=None):
-    raise ResourceNotFound()
-
-
 def fourZeroNine(response=None):
     raise Conflict()
 
@@ -122,7 +118,6 @@ ERROR_MAPPINGS = {
     307: zero,
     400: fourZeroZero,
     403: fourZeroThree,
-    404: fourZeroFour,
     405: zero,
     409: fourZeroNine,
     424: fourTwoFour,
