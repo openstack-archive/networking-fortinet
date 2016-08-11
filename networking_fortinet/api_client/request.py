@@ -30,7 +30,7 @@ from oslo_utils import excutils
 import six
 import six.moves.urllib.parse as urlparse
 
-from networking_fortinet._i18n import _, _LI, _LW
+from networking_fortinet._i18n import _, _LE, _LI, _LW
 from networking_fortinet import api_client
 from networking_fortinet.api_client import templates
 
@@ -201,12 +201,12 @@ class ApiRequest(object):
             # the conn to be released with is_conn_error == True
             # which puts the conn on the back of the client's priority
             # queue.
-            if (response.status == 500 and
-                response.status > 501):
-                LOG.warning(_LW("[%(rid)d] Request '%(method)s %(url)s' "
-                                "received: %(status)s"),
-                            {'rid': self._rid(), 'method': self._method,
-                             'url': self._url, 'status': response.status})
+            if (response.status not in [502, 503, 504] and
+                response.status >= 500):
+                LOG.error(_LE("[%(rid)d] Request '%(method)s %(url)s' "
+                              "received: %(status)s"),
+                          {'rid': self._rid(), 'method': self._method,
+                           'url': self._url, 'status': response.status})
                 raise Exception(_('Server error return: %s'), response.status)
             return response
         except Exception as e:
