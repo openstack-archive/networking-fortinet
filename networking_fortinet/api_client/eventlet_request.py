@@ -133,8 +133,10 @@ class EventletApiRequest(request.ApiRequest):
                 if attempt <= self._retries and not self._abort:
                     if req.status in (401, 403):
                         continue
-                    elif req.status == 503:
-                        timeout = 0.5
+                    # TODO(jerryz): 400 is a code sometimes found
+                    # in 5.4.1, still investigating.
+                    elif req.status in (400, 503):
+                        timeout = 1
                         continue
                     # else fall through to return the error code
 
