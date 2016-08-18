@@ -76,12 +76,17 @@ class ApiRequest(object):
     def join(self):
         pass
 
+    def get_conn(self):
+        conn = self._client_conn or \
+               self._api_client.acquire_connection(True,
+                                                   copy.copy(self._headers),
+                                                   rid=self._rid())
+        return conn
+
     def _issue_request(self):
         '''Issue a request to a provider.'''
-        conn = (self._client_conn or
-                self._api_client.acquire_connection(True,
-                                                    copy.copy(self._headers),
-                                                    rid=self._rid()))
+
+        conn = self.get_conn()
         if conn is None:
             error = Exception(_("No API connections available"))
             self._request_error = error
@@ -97,7 +102,7 @@ class ApiRequest(object):
         response = None
         try:
             redirects = 0
-            while (redirects <= self._redirects):
+            while redirects <= self._redirects:
                 # Update connection with user specified request timeout,
                 # the connect timeout is usually smaller so we only set
                 # the request timeout after a connection is established
@@ -107,11 +112,6 @@ class ApiRequest(object):
                 elif conn.sock.gettimeout() != self._http_timeout:
                     conn.sock.settimeout(self._http_timeout)
                 headers = copy.copy(self._headers)
-                if templates.RELOGIN in url:
-                    url = jsonutils.loads(templates.LOGIN)['path']
-                    conn.connect()
-                    self._api_client._wait_for_login(conn, headers)
-                    url = self._url
 
                 cookie = self._api_client.auth_cookie(conn)
 
@@ -123,7 +123,7 @@ class ApiRequest(object):
                 try:
                     if self._body:
                         if (self._url ==
-                            jsonutils.loads(templates.LOGIN)['path']):
+                                jsonutils.loads(templates.LOGIN)['path']):
                             body = urlparse.urlencode(self._body)
                         else:
                             body = jsonutils.dumps(self._body)
@@ -135,15 +135,27 @@ class ApiRequest(object):
                                     "headers=%(headers)s"),
                                 {'method': self._method, "url": url,
                                  "body": body, "headers": headers})
-
                     conn.request(self._method, url, body, headers)
+                    response = conn.getresponse()
                 except Exception as e:
-                    with excutils.save_and_reraise_exception():
-                        LOG.warning(_LW("[%(rid)d] Exception issuing request: "
-                                        "%(e)s"),
+                    if isinstance(e, httpclient.BadStatusLine):
+                        LOG.warning(_LW("[%(rid)d] connection error: %(e)s"),
                                     {'rid': self._rid(), 'e': e})
+                        self._api_client.release_connection(conn, True, False,
+                                                            rid=self._rid())
+                        conn = self.get_conn()
+                        if conn is None:
+                            error = Exception(_("No connections available"))
+                            self._request_error = error
+                            return error
+                        continue
+                    else:
+                        with excutils.save_and_reraise_exception():
+                            LOG.warning(
+                                _LW("[%(rid)d] Exception issuing request: "
+                                    "%(e)s"),
+                                {'rid': self._rid(), 'e': e})
 
-                response = conn.getresponse()
                 response.body = response.read()
                 response.headers = response.getheaders()
                 elapsed_time = time.time() - issued_time
@@ -173,12 +185,10 @@ class ApiRequest(object):
                     # for the current provider so that subsequent requests
                     # to the same provider triggers re-authentication.
                     self._api_client.set_auth_cookie(conn, None)
-                elif response.status == 503:
+                elif 503 == response.status:
                     is_conn_service_unavail = True
 
-                if response.status not in [301,
-                                           302,
-                                           307]:
+                if response.status not in [301, 302, 307]:
                     break
                 elif redirects >= self._redirects:
                     LOG.info(_LI("[%d] Maximum redirects exceeded, aborting "
@@ -201,14 +211,13 @@ class ApiRequest(object):
             # the conn to be released with is_conn_error == True
             # which puts the conn on the back of the client's priority
             # queue.
-            if (response.status == 500 and
-                response.status > 501):
+            if 500 == response.status or 501 < response.status:
                 LOG.warning(_LW("[%(rid)d] Request '%(method)s %(url)s' "
                                 "received: %(status)s"),
                             {'rid': self._rid(), 'method': self._method,
                              'url': self._url, 'status': response.status})
                 raise Exception(_('Server error return: %s'), response.status)
-            return response
+
         except Exception as e:
             if isinstance(e, httpclient.BadStatusLine):
                 msg = ("Invalid server response")
@@ -231,6 +240,7 @@ class ApiRequest(object):
                 self._api_client.release_connection(conn, is_conn_error,
                                                     is_conn_service_unavail,
                                                     rid=self._rid())
+            return response
 
     def _redirect_params(self, conn, headers, allow_release_conn=False):
         """Process redirect response, create new connection if necessary.
