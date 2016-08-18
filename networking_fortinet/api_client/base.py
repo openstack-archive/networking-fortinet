@@ -50,11 +50,12 @@ class ApiClientBase(object):
                 context = ssl._create_unverified_context(
                     cert_reqs=ssl.CERT_NONE)
                 return httplib.HTTPSConnection(host, port,
-                                           timeout=self._connect_timeout,
-                                           context=context)
+                                               timeout=self._connect_timeout,
+                                               context=context)
             except (ImportError, AttributeError):
                 return httplib.HTTPSConnection(host, port,
                                                timeout=self._connect_timeout)
+
         return httplib.HTTPConnection(host, port,
                                       timeout=self._connect_timeout)
 
@@ -139,12 +140,13 @@ class ApiClientBase(object):
         priority, conn = self._conn_pool.get()
         now = time.time()
         if getattr(conn, 'last_used', now) < now - self.CONN_IDLE_TIMEOUT:
-            LOG.info(_LI("[%(rid)d] Connection %(conn)s idle for %(sec)0.2f "
-                       "seconds; reconnecting."),
-                     {'rid': rid, 'conn': api_client.ctrl_conn_to_str(conn),
+            LOG.info(_LI("[%(rid)d] Connection %(conn)s idle for "
+                         "%(sec)0.2f seconds; reconnecting."),
+                     {'rid': rid,
+                      'conn': api_client.ctrl_conn_to_str(conn),
                       'sec': now - conn.last_used})
             conn = self._create_connection(*self._conn_params(conn))
-
+            self.set_auth_cookie(conn, None)
         conn.last_used = now
         conn.priority = priority  # stash current priority for release
         qsize = self._conn_pool.qsize()
@@ -183,9 +185,21 @@ class ApiClientBase(object):
                             "reconnecting to %(conn)s"),
                         {'rid': rid,
                          'conn': api_client.ctrl_conn_to_str(http_conn)})
+            http_conn.close()
             http_conn = self._create_connection(*self._conn_params(http_conn))
+            self.set_auth_cookie(http_conn, None)
+            conns = []
+            while not self._conn_pool.empty():
+                priority, conn = self._conn_pool.get()
+                if self._conn_params(conn) == conn_params:
+                    conn.close()
+                    continue
+                conns.append((priority, conn))
+            for priority, conn in conns:
+                self._conn_pool.put((priority, conn))
             priority = self._next_conn_priority
             self._next_conn_priority += 1
+
         elif service_unavail:
             # http_conn returned a service unaviable response, put other
             # connections to the same controller at end of priority queue,
@@ -198,7 +212,6 @@ class ApiClientBase(object):
                 conns.append((priority, conn))
             for priority, conn in conns:
                 self._conn_pool.put((priority, conn))
-            # put http_conn at end of queue also
             priority = self._next_conn_priority
             self._next_conn_priority += 1
         else:
