@@ -29,6 +29,9 @@ from networking_fortinet.api_client import templates
 
 LOG = logging.getLogger(__name__)
 USER_AGENT = "Neutron eventlet client/2.0"
+DEFAULT_HTTP_TIMEOUT = request.DEFAULT_HTTP_TIMEOUT
+DEFAULT_RETRIES = request.DEFAULT_RETRIES if request.DEFAULT_RETRIES < 2 else 2
+DEFAULT_REDIRECTS = request.DEFAULT_REDIRECTS
 
 
 class EventletApiRequest(request.ApiRequest):
@@ -53,10 +56,10 @@ class EventletApiRequest(request.ApiRequest):
 
     def __init__(self, client_obj, url, method="GET", body=None,
                  headers=None,
-                 retries=request.DEFAULT_RETRIES,
+                 retries=DEFAULT_RETRIES,
                  auto_login=True,
-                 redirects=request.DEFAULT_REDIRECTS,
-                 http_timeout=request.DEFAULT_HTTP_TIMEOUT, client_conn=None):
+                 redirects=DEFAULT_REDIRECTS,
+                 http_timeout=DEFAULT_HTTP_TIMEOUT, client_conn=None):
         '''Constructor.'''
         self._api_client = client_obj
         self._url = url
@@ -125,13 +128,17 @@ class EventletApiRequest(request.ApiRequest):
         while response is None and attempt <= self._retries:
             eventlet.greenthread.sleep(timeout)
             attempt += 1
-
             req = self._issue_request()
             # automatically raises any exceptions returned.
             if isinstance(req, httplib.HTTPResponse):
                 timeout = 0
                 if attempt <= self._retries and not self._abort:
-                    if req.status in (401, 403):
+                    # currently there is a bug in fortios, it return 401 and
+                    # 400 when a cookie is invalid, the change is to tolerant
+                    # the bug to handle return 400 situation.
+                    # when fortios fix the bug, here should use
+                    # 'req.status in (401, 403)' instead
+                    if req.status in (400, 401, 403):
                         continue
                     elif req.status == 503:
                         timeout = 0.5
