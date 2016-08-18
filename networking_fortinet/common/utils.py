@@ -18,7 +18,7 @@ from oslo_serialization import jsonutils
 
 from neutron.db import l3_db
 from neutron.db import models_v2
-from neutron.db import segments_db
+from neutron.plugins.ml2 import models as segments_db
 
 from networking_fortinet.api_client import exception
 from networking_fortinet.common import constants as const
