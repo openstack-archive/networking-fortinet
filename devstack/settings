@@ -5,4 +5,5 @@ ENABLE_TENANT_VLANS=True
 ENABLE_TENANT_TUNNELS=False
 LIBVIRT_FIREWALL_DRIVER="nova.virt.firewall.NoopFirewallDriver"
 Q_USE_SECGROUP=False
+FORCE_CONFIG_DRIVE=True
 enable_service fortinet-neutron
