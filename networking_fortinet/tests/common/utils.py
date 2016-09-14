@@ -18,7 +18,7 @@ import random
 import string
 import time
 
-from networking_fortinet.api_client import exception
+from fortiosclient import exception
 
 
 # generate a id with the specific prefix and the width

@@ -38,7 +38,7 @@ class TestTasks(unittest2.TestCase):
         is a example format of subtask:
         'subtask':
                 {'params': (
-                    <api_client.client.FortiosApiClient object at 0x2a14a90>,
+                    <fortiosclient.client.FortiosApiClient object at 0x**>,
                     {'id': 2, 'vdom': 'root'}
                 ),
                 'func': <function wrapper at 0x2b62ed8>
@@ -59,7 +59,7 @@ class TestTasks(unittest2.TestCase):
         is a example format of subtask:
         'subtask':
                 {'params': (
-                    <api_client.client.FortiosApiClient object at 0x2a14a90>,
+                    <fortiosclient.client.FortiosApiClient object at 0x**>,
                     {'id': 2, 'vdom': 'root'}
                 ),
                 'func': <function wrapper at 0x2b62ed8>

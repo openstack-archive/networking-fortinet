@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from fortiosclient import exception
 import netaddr
 from oslo_log import log as logging
 from oslo_serialization import jsonutils
@@ -20,7 +21,6 @@ from neutron.db import l3_db
 from neutron.db import models_v2
 from neutron.db import segments_db
 
-from networking_fortinet.api_client import exception
 from networking_fortinet.common import constants as const
 from networking_fortinet.common import resources as resources
 from networking_fortinet.db import models as fortinet_db

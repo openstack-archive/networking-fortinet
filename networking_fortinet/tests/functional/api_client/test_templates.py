@@ -16,7 +16,7 @@
 import inspect
 import unittest2
 
-from networking_fortinet.api_client import client
+from fortiosclient import client
 from networking_fortinet.tests.common import utils
 
 PREFIX = 'test_CRUD_'

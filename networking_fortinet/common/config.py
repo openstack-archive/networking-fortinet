@@ -12,10 +12,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from fortiosclient import client
 from oslo_config import cfg
 
 from networking_fortinet._i18n import _
-from networking_fortinet.api_client import client
 
 ML2_FORTINET = [
     cfg.StrOpt('address', default='',
