@@ -20,16 +20,12 @@ import copy
 from neutron.db import model_base
 from neutron.db import models_v2
 from oslo_db import exception as os_db_exception
-from oslo_log import log as logging
 import six
 import sqlalchemy as sa
 from sqlalchemy.inspection import inspect
 from sqlalchemy import orm
 
 from networking_fortinet.common import constants as const
-
-
-LOG = logging.getLogger(__name__)
 
 
 OPS = ["ADD", "UPDATE", "DELETE", "QUERY"]
