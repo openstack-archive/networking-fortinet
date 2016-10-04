@@ -48,7 +48,9 @@ function _neutron_create_private_subnet_v4 {
     local project_id=$1
     local subnet_params="--tenant-id $project_id "
     subnet_params+="--ip_version 4 "
-    subnet_params+="--gateway $NETWORK_GATEWAY "
+    if [[ -n "$NETWORK_GATEWAY" ]]; then
+        subnet_params+="--gateway $NETWORK_GATEWAY "
+    fi
     subnet_params+="--name $PRIVATE_SUBNET_NAME "
     subnet_params+="$NET_ID $FIXED_RANGE"
     local subnet_id

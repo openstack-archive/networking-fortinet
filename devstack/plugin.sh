@@ -26,8 +26,11 @@
 XTRACE=$(set +o | grep xtrace)
 set +o xtrace
 
+PUBLIC_BRIDGE=${PUBLIC_BRIDGE:-br-ex}
+PUBLIC_BRIDGE_MTU=${PUBLIC_BRIDGE_MTU:-1500}
+
 # Specify the FortiGate parameters
-Q_FORTINET_PLUGIN_FG_IP=${Q_FORTINET_PLUGIN_FG_IP:-}
+Q_FORTINET_PLUGIN_FG_IP=${Q_FORTINET_PLUGIN_FG_IP:-169.254.254.100}
 Q_FORTINET_PLUGIN_FG_PORT=${Q_FORTINET_PLUGIN_FG_PORT:-443}
 Q_FORTINET_PLUGIN_FG_PROTOCOL=${Q_FORTINET_PLUGIN_FG_PROTOCOL:-https}
 # Specify the FG username
@@ -63,6 +66,21 @@ PING_TIMEOUT=${PING_TIMEOUT:-300}
 NETWORKING_FGT_DIR=$DEST/networking-fortinet
 
 ABSOLUTE_PATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)
+
+# create a nat network for the fgtvm management plane in DVR mode.
+FGT_BR=fgt-br
+FGT_MGMT_NET=fgt-mgmt
+VM=fortivm
+IMG_DIR=/var/lib/libvirt/images
+
+# if the node is for dvr or fgt host is not specified, boostrap a built-in fortivm
+_use_builtin_vm=false
+if [[ $Q_DVR_MODE != "legacy" ]] && is_service_enabled n-cpu; then
+    _use_builtin_vm=true
+fi
+if [[ $Q_FORTINET_PLUGIN_FG_IP == "169.254.254.100" ]] && is_service_enabled n-api; then
+    _use_builtin_vm=true
+fi
 
 source $TOP_DIR/lib/neutron_plugins/ml2
 
@@ -105,7 +123,7 @@ function configure_fortigate_neutron_ml2_driver {
     iniset /$Q_PLUGIN_CONF_FILE ml2_fortinet \
         enable_default_fwrule $Q_FORTINET_FWAAS_ENABLE_DEFAULT_FWRULE
 
-    if is_service_enabled n-cpu; then
+    if is_service_enabled n-cpu || [[ $Q_FORTINET_PLUGIN_FG_IP == "169.254.254.100" ]]; then
         sudo ovs-vsctl --no-wait -- --may-exist add-br \
             br-${Q_FORTINET_TENANT_INTERFACE}
         sudo ovs-vsctl --no-wait -- --may-exist add-port \
@@ -130,6 +148,65 @@ function has_neutron_plugin_security_group {
     return 1
 }
 
+function configure_builtin_fortivm {
+        echo "create bridge"
+        cat > $NETWORKING_FGT_DIR/devstack/$FGT_MGMT_NET.xml << EOF
+<network>
+  <name>$FGT_MGMT_NET</name>
+  <bridge name="$FGT_BR"/>
+  <forward mode="nat"/>
+  <ip address="169.254.254.1" netmask="255.255.255.0">
+    <dhcp>
+      <range start="169.254.254.100" end="169.254.254.254"/>
+    </dhcp>
+  </ip>
+</network>
+EOF
+        sudo virsh net-define $NETWORKING_FGT_DIR/devstack/$FGT_MGMT_NET.xml
+        sudo virsh net-start $FGT_MGMT_NET
+        sudo virsh net-autostart $FGT_MGMT_NET
+        _neutron_ovs_base_add_public_bridge
+        sudo ovs-vsctl --no-wait -- --may-exist add-port $PUBLIC_BRIDGE $PUBLIC_INTERFACE
+        sudo ip link set $PUBLIC_INTERFACE up
+        sudo ip link set $PUBLIC_BRIDGE up
+        echo "preparing config drive"
+        cat > $NETWORKING_FGT_DIR/devstack/cloud_init/openstack/content/0000 << EOF
+$Q_FORTINET_FORTIVM_LIC
+EOF
+        genisoimage -output $TOP_DIR/disk.config -ldots -allow-lowercase \
+-allow-multidot -l -volid cidata -joliet -rock -V config-2 $NETWORKING_FGT_DIR/devstack/cloud_init
+        # update the VM data
+        yes | sudo wget $Q_FORTINET_IMAGE_URL -O $IMG_DIR/fortios.qcow2
+        yes | sudo cp $TOP_DIR/disk.config $IMG_DIR/disk.config
+
+        # create VM with the updated data
+        cat $NETWORKING_FGT_DIR/devstack/templates/libvirt.xml | sed 's/$OVS_PHYSICAL_BRIDGE/'"br-$Q_FORTINET_TENANT_INTERFACE"'/' > $TOP_DIR/libvirt.xml
+        sudo virsh define $TOP_DIR/libvirt.xml
+        sudo virsh start $VM
+        # wait until fortivm's restful api is available.
+        timeout 120 sh -c 'while ! wget  --no-proxy --no-check-certificate -q -O- http://169.254.254.100; do sleep 0.5; done'
+        sleep 60
+        ssh -o StrictHostKeyChecking=no -tt admin@169.254.254.100 << 'EOF' > ${LOGDIR}/fgt.log &
+config global
+diag debug enable
+diag debug application httpsd 255
+diag debug cli 8
+EOF
+}
+
+function clean_builtin_fortivm {
+    echo "cleaning preexisting fortivm"
+    if sudo virsh list --all |grep $VM > /dev/null; then
+        sudo virsh destroy $VM || true
+        sudo virsh undefine $VM
+    fi
+    if sudo virsh net-list --all |grep $FGT_MGMT_NET > /dev/null; then
+        sudo virsh net-destroy $FGT_MGMT_NET || true
+        sudo virsh net-undefine $FGT_MGMT_NET
+    fi
+}
+
+
 if is_service_enabled fortinet-neutron; then
     if [[ "$1" == "source" ]]; then
         # no-op
@@ -140,8 +217,16 @@ if is_service_enabled fortinet-neutron; then
         install_fortigate_neutron_ml2_driver
     elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
         configure_fortigate_neutron_ml2_driver
+        if $_use_builtin_vm; then
+            configure_builtin_fortivm
+        fi
     elif [[ "$1" == "stack" && "$2" == "extra" ]]; then
         configure_tempest_for_fortigate_plugin
+        # Add port forwarding for fortivm so GUI can be accessed outside
+        if $_use_builtin_vm; then
+            sudo iptables -I FORWARD -d 169.254.254.100/32 -p tcp -m tcp --dport 443 -m state --state NEW,RELATED,ESTABLISHED -j ACCEPT
+            sudo iptables -t nat -A PREROUTING -p tcp -m tcp --dport 9443 -j DNAT --to-destination 169.254.254.100:443
+        fi
     fi
 
     if [[ "$1" == "unstack" ]]; then
@@ -152,6 +237,15 @@ execute restore config ftp $FGT_CONFIG_PATH $FTP_SERVER $FTP_USER $FTP_PASS
 y
 exit
 EOF
+        fi
+        if is_service_enabled n-cpu; then
+            sudo ovs-vsctl --if-exists del-port br-${Q_FORTINET_TENANT_INTERFACE} ${Q_FORTINET_TENANT_INTERFACE}
+            sudo ovs-vsctl --if-exists del-br br-${Q_FORTINET_TENANT_INTERFACE}
+        fi
+        if $_use_builtin_vm; then
+            clean_builtin_fortivm
+            sudo iptables -D FORWARD -d 169.254.254.100/32 -p tcp -m tcp --dport 443 -m state --state NEW,RELATED,ESTABLISHED -j ACCEPT
+            sudo iptables -t nat -D PREROUTING -p tcp -m tcp --dport 9443 -j DNAT --to-destination 169.254.254.100:443
         fi
     fi
 
