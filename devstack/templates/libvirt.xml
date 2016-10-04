@@ -1,0 +1,73 @@
+<domain type="kvm">
+  <uuid>62346cbd-2bbf-4d42-a79a-12345567890a</uuid>
+  <name>fortivm</name>
+  <memory>1024576</memory>
+  <vcpu>1</vcpu>
+  <os>
+    <type arch='x86_64'>hvm</type>
+    <boot dev="hd"/>
+  </os>
+  <features>
+    <acpi/>
+    <apic/>
+  </features>
+  <cputune>
+    <shares>1024</shares>
+  </cputune>
+  <clock offset="utc"/>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>destroy</on_crash>
+  <cpu mode="host-model" match="exact">
+    <topology sockets="1" cores="1" threads="1"/>
+  </cpu>
+  <devices>
+    <disk type="file" device="disk">
+      <driver name="qemu" type="qcow2" cache="none"/>
+      <source file="/var/lib/libvirt/images/fortios.qcow2"/>
+      <target bus="virtio" dev="vda"/>
+    </disk>
+    <disk type="file" device="cdrom">
+      <driver name="qemu" type="raw" cache="none"/>
+       <source file="/var/lib/libvirt/images/disk.config"/>
+       <target bus="ide" dev="hdd"/>
+    </disk>
+    <interface type="network">
+      <target dev='fgt-mgmt-port'/>
+      <model type="virtio"/>
+      <source network="fgt-mgmt"/>
+      <driver name="qemu"/>
+    </interface>
+    <interface type="bridge">
+      <virtualport type='openvswitch'>
+      </virtualport>
+      <target dev='fgt-int-port'/>
+      <model type="virtio"/>
+      <source bridge="$OVS_PHYSICAL_BRIDGE"/>
+      <driver name="qemu"/>
+    </interface>
+    <interface type="bridge">
+      <virtualport type='openvswitch'>
+      </virtualport>
+      <target dev='fgt-ext-port'/>
+      <model type="virtio"/>
+      <source bridge="br-ex"/>
+      <driver name="qemu"/>
+    </interface>
+    <serial type="file">
+      <source path="/var/lib/libvirt/console.log"/>
+    </serial>
+    <console type="pty">
+      <target type="serial" port="0"/>
+    </console>
+    <serial type="pty"/>
+    <input type="tablet" bus="usb"/>
+    <graphics type="vnc" port="6000" autoport="no" keymap="en-us" listen="0.0.0.0"/>
+    <video>
+      <model type="cirrus"/>
+    </video>
+    <memballoon model="virtio">
+      <stats period="10"/>
+    </memballoon>
+  </devices>
+</domain>

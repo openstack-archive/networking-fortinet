@@ -15,9 +15,7 @@
 
 from oslo_config import cfg
 
-from tempest import exceptions
 from tempest.lib.common import ssh
-from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions as lib_exc
 from tempest.scenario import manager
 
@@ -92,55 +90,6 @@ class FWaaSScenarioTest(fwaas_client.FWaaSClientMixin,
             except lib_exc.SSHTimeout:
                 if should_connect:
                     raise
-
-    def create_networks(self, networks_client=None,
-                        routers_client=None, subnets_client=None,
-                        tenant_id=None, dns_nameservers=None):
-        """Create a network with a subnet connected to a router.
-        The baremetal driver is a special case since all nodes are
-        on the same shared network.
-        :param client: network client to create resources with.
-        :param tenant_id: id of tenant to create resources in.
-        :param dns_nameservers: list of dns servers to send to subnet.
-        :returns: network, subnet, router
-        """
-        if CONF.baremetal.driver_enabled:
-            # NOTE(Shrews): This exception is for environments where tenant
-            # credential isolation is available, but network separation is
-            # not (the current baremetal case). Likely can be removed when
-            # test account mgmt is reworked:
-            # https://blueprints.launchpad.net/tempest/+spec/test-accounts
-            if not CONF.compute.fixed_network_name:
-                m = 'fixed_network_name must be specified in config'
-                raise exceptions.InvalidConfiguration(m)
-            network = self._get_network_by_name(
-                CONF.compute.fixed_network_name)
-            router = None
-            subnet = None
-        else:
-            network = self._create_network(
-                networks_client=networks_client,
-                tenant_id=tenant_id)
-            router = self._get_router(client=routers_client,
-                                      tenant_id=tenant_id)
-
-            subnet_kwargs = dict(network=network,
-                                 subnets_client=subnets_client,
-                                 routers_client=routers_client)
-            # use explicit check because empty list is a valid option
-            if dns_nameservers is not None:
-                subnet_kwargs['dns_nameservers'] = dns_nameservers
-            subnet = self._create_subnet(**subnet_kwargs)
-            if not routers_client:
-                routers_client = self.routers_client
-            routers_client.add_router_interface(router['id'],
-                                                subnet_id=subnet['id'])
-            # save a cleanup job to remove this association between
-            # router and subnet
-            self.addCleanup(test_utils.call_and_ignore_notfound_exc,
-                            routers_client.remove_router_interface,
-                            router['id'], subnet_id=subnet['id'])
-        return network, subnet, router
 
     def _get_router(self, client=None, tenant_id=None):
         """Retrieve a router for the given tenant id.
