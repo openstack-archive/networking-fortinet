@@ -7,10 +7,17 @@ enable_service q-svc q-fwaas q-agt n-novnc
 
 # CHANGEME: customized git repo location
 enable_plugin networking-fortinet file:///home/stack/networking-fortinet master
-#enable_plugin networking-fortinet https://git.openstack.com/openstack/networking-fortinet master
+#enable_plugin networking-fortinet https://git.openstack.org/networking-fortinet master
 
 # CHANGEME: vlan range for tenant networks
 Q_ML2_PLUGIN_VLAN_TYPE_OPTIONS='network_vlan_ranges=physnet1:1009:1099'
+
+Q_DVR_MODE=dvr_snat
+Q_FORTINET_FORTIVM_LIC="-----BEGIN FGT VM LICENSE-----
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+-----END FGT VM LICENSE-----"
 
 # CHANGEME: floating ip information for your setup.
 Q_FLOATING_ALLOCATION_POOL=start=10.160.38.241,end=10.160.38.250
@@ -21,37 +28,23 @@ PUBLIC_NETWORK_GATEWAY=10.160.38.1
 enable_plugin neutron-fwaas https://git.openstack.org/openstack/neutron-fwaas master
 FWAAS_PLUGIN=fwaas_fortinet
 
-# CHANGEME: The interface for tenant traffic, required on compute nodes
-# and controller if a builtin fortivm is used.
-Q_FORTINET_TENANT_INTERFACE=eth2
-OVS_PHYSICAL_BRIDGE=br-${Q_FORTINET_TENANT_INTERFACE}
+# CHANGEME: The interface for tenant traffic
+Q_FORTINET_TENANT_INTERFACE=eth1
 
-# CHANGEME: The interface for external traffic, required if builtin fortivm
-# is used on controller. It is the NIC with external network access.
-PUBLIC_INTERFACE=eth3
+# CHANGEME: The interface for external traffic
+PUBLIC_INTERFACE=eth2
 
-# CHANGEME: License for builtin fortivm, required if builtin vm is used. Replace
-# "x"-s with the content of license file.
-Q_FORTINET_FORTIVM_LIC="-----BEGIN FGT VM LICENSE-----
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
------END FGT VM LICENSE-----"
+OVS_BRIDGE_MAPPINGS="physnet1:br-${Q_FORTINET_TENANT_INTERFACE}"
+Q_USE_PROVIDERNET_FOR_PUBLIC=False
 
 # fortigate ml2 plugin parameters
-# CHANGEME: URL of FGTVM image(if use a builtin fortivm on controller as
-# network node, it is required)
-Q_FORTINET_IMAGE_URL=
-# CHANGEME: ip address of the fortigate rest API, leave it blank if a
-# builtin fortivm is preferred, so that a fortivm will be started within
-# the controller, no external fortivm is required, nor any human intervention.
-Q_FORTINET_PLUGIN_FG_IP=192.168.121.187
-# CHANGEME: interface for tenant traffic, leave unchanged if builtin vm is used.
+# CHANGEME: ip address of the fortigate rest API
+Q_FORTINET_PLUGIN_FG_IP=10.160.2.230
+# CHANGEME: interface for tenant traffic
 Q_FORTINET_PLUGIN_FG_INT_INF=port2
-# CHANGEME: interface for external traffic, leave unchanged if builtin vm is used.
+# CHANGEME: interface for external traffic
 Q_FORTINET_PLUGIN_FG_EXT_INF=port3
-# CHANGEME: if use fortivm set to False, True if hardware npu available, leave
-# unchanged if builtin vm is used.
+# CHANGEME: if use fortivm set to False, True if hardware npu available
 Q_FORTINET_PLUGIN_NPU_AVAILABLE=False
 # CHANGEME: fortigate username
 Q_FORTINET_PLUGIN_FG_USERNAME=admin
@@ -85,7 +78,7 @@ DATABASE_TYPE=mysql
 
 # networking configuration parameters
 # CHANGEME: control plane nic
-HOST_IP_IFACE=eth1
+HOST_IP_IFACE=eth0
 
 # logging configuration parameters
 
