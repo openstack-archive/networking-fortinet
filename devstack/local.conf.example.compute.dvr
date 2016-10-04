@@ -4,8 +4,8 @@ disable_service n-net
 disable_service ceilometer-acompute
 
 # CHANGEME: networking-fortinet plugin repo url
-enable_plugin networking-fortinet file:///home/stack/networking-fortinet master
-#enable_plugin networking-fortinet https://git.openstack.com/openstack/networking-fortinet master
+enable networking-fortinet file:///home/stack/networking-fortinet stable/liberty
+#enable_plugin networking-fortinet https://github.com/jerryz1982/networking-fortinet stable/liberty
 
 Q_PLUGIN=ml2
 IP_VERSION=4
@@ -16,14 +16,20 @@ Q_ML2_PLUGIN_VLAN_TYPE_OPTIONS='network_vlan_ranges=physnet1:1009:1099'
 Q_ML2_PLUGIN_TYPE_DRIVERS=local,flat,vlan,gre,vxlan
 Q_ML2_TENANT_NETWORK_TYPE=vlan
 ENABLE_TENANT_TUNNELS=False
+Q_DVR_MODE=dvr
+Q_FORTINET_FORTIVM_LIC="-----BEGIN FGT VM LICENSE-----
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+-----END FGT VM LICENSE-----"
 
-# CHANGEME: The interface for tenant traffic, required on compute nodes
-# and controller if a builtin fortivm is used.
-Q_FORTINET_TENANT_INTERFACE=eth2
+# CHANGEME: The interface for tenant traffic
+Q_FORTINET_TENANT_INTERFACE=eth1
+
+PUBLIC_INTERFACE=eth2
+OVS_BRIDGE_MAPPINGS="physnet1:br-${Q_FORTINET_TENANT_INTERFACE}"
 
 PROVIDER_NETWORK_TYPE=vlan
-PHYSICAL_NETWORK=physnet1
-OVS_PHYSICAL_BRIDGE=br-${Q_FORTINET_TENANT_INTERFACE}
 
 # generic configuration parameters
 DATABASE_PASSWORD=secretsecret
@@ -41,7 +47,7 @@ DATABASE_TYPE=mysql
 
 # networking configuration parameters
 # CHANGEME: control plane nic
-HOST_IP_IFACE=eth1
+HOST_IP_IFACE=eth0
 
 # logging configuration parameters
 
@@ -53,7 +59,7 @@ SCREEN_LOGDIR=/opt/stack/logs
 
 
 # generic configuration parameters (compute)
-ENABLED_SERVICES=n-cpu,q-agt,c-vol,n-novnc
+ENABLED_SERVICES=n-cpu,q-agt,q-l3,c-vol,n-novnc
 # CHANGEME: management ip of the nova compute node
 NOVA_SERVICE_LOCAL_HOST=10.0.10.20
 
