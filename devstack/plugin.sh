@@ -26,8 +26,11 @@
 XTRACE=$(set +o | grep xtrace)
 set +o xtrace
 
+PUBLIC_BRIDGE=${PUBLIC_BRIDGE:-br-ex}
+PUBLIC_BRIDGE_MTU=${PUBLIC_BRIDGE_MTU:-1500}
+
 # Specify the FortiGate parameters
-Q_FORTINET_PLUGIN_FG_IP=${Q_FORTINET_PLUGIN_FG_IP:-}
+Q_FORTINET_PLUGIN_FG_IP=${Q_FORTINET_PLUGIN_FG_IP:-169.254.254.100}
 Q_FORTINET_PLUGIN_FG_PORT=${Q_FORTINET_PLUGIN_FG_PORT:-443}
 Q_FORTINET_PLUGIN_FG_PROTOCOL=${Q_FORTINET_PLUGIN_FG_PROTOCOL:-https}
 # Specify the FG username
@@ -63,6 +66,12 @@ PING_TIMEOUT=${PING_TIMEOUT:-300}
 NETWORKING_FGT_DIR=$DEST/networking-fortinet
 
 ABSOLUTE_PATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)
+
+# create a nat network for the fgtvm management plane in DVR mode.
+FGT_BR=fgt-br
+FGT_MGMT_NET=fgt-mgmt
+VM=fortivm
+IMG_DIR=/var/lib/libvirt/images
 
 source $TOP_DIR/lib/neutron_plugins/ml2
 
@@ -105,7 +114,7 @@ function configure_fortigate_neutron_ml2_driver {
     iniset /$Q_PLUGIN_CONF_FILE ml2_fortinet \
         enable_default_fwrule $Q_FORTINET_FWAAS_ENABLE_DEFAULT_FWRULE
 
-    if is_service_enabled n-cpu; then
+    if is_service_enabled n-cpu || [[ $Q_FORTINET_PLUGIN_FG_IP == "169.254.254.100" ]]; then
         sudo ovs-vsctl --no-wait -- --may-exist add-br \
             br-${Q_FORTINET_TENANT_INTERFACE}
         sudo ovs-vsctl --no-wait -- --may-exist add-port \
@@ -130,6 +139,55 @@ function has_neutron_plugin_security_group {
     return 1
 }
 
+function configure_builtin_fortivm {
+        echo "create bridge"
+        cat > $NETWORKING_FGT_DIR/devstack/$FGT_MGMT_NET.xml << EOF
+<network>
+  <name>$FGT_MGMT_NET</name>
+  <bridge name="$FGT_BR"/>
+  <forward mode="nat"/>
+  <ip address="169.254.254.1" netmask="255.255.255.0">
+    <dhcp>
+      <range start="169.254.254.100" end="169.254.254.254"/>
+    </dhcp>
+  </ip>
+</network>
+EOF
+        virsh net-define $NETWORKING_FGT_DIR/devstack/$FGT_MGMT_NET.xml
+        virsh net-start $FGT_MGMT_NET
+        virsh net-autostart $FGT_MGMT_NET
+        _neutron_ovs_base_add_public_bridge
+        sudo ovs-vsctl --no-wait -- --may-exist add-port $PUBLIC_BRIDGE $PUBLIC_INTERFACE
+        sudo ip link set $PUBLIC_INTERFACE up
+        sudo ip link set $PUBLIC_BRIDGE up
+        echo "preparing config drive"
+        cat > $NETWORKING_FGT_DIR/devstack/cloud_init/openstack/content/0000 << EOF
+$Q_FORTINET_FORTIVM_LIC
+EOF
+        genisoimage -output $TOP_DIR/disk.config -ldots -allow-lowercase \
+-allow-multidot -l -volid cidata -joliet -rock -V config-2 $NETWORKING_FGT_DIR/devstack/cloud_init
+        # update the VM data
+        yes | sudo wget $Q_FORTINET_IMAGE_URL -O $IMG_DIR/fortios.qcow2
+        yes | sudo cp $TOP_DIR/disk.config $IMG_DIR/disk.config
+
+        # create VM with the updated data
+        cat $NETWORKING_FGT_DIR/devstack/templates/libvirt.xml | sed 's/$OVS_PHYSICAL_BRIDGE/'"br-$Q_FORTINET_TENANT_INTERFACE"'/' > $TOP_DIR/libvirt.xml
+        virsh define $TOP_DIR/libvirt.xml
+        virsh start $VM
+}
+
+function clean_builtin_fortivm {
+    echo "cleaning preexisting fortivm"
+    if virsh list --all |grep $VM > /dev/null; then
+        virsh destroy $VM || true
+        virsh undefine $VM
+    fi
+    if virsh net-list --all |grep $FGT_MGMT_NET > /dev/null; then
+        virsh net-destroy $FGT_MGMT_NET || true
+        virsh net-undefine $FGT_MGMT_NET
+    fi
+}
+
 if is_service_enabled fortinet-neutron; then
     if [[ "$1" == "source" ]]; then
         # no-op
@@ -140,6 +198,12 @@ if is_service_enabled fortinet-neutron; then
         install_fortigate_neutron_ml2_driver
     elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
         configure_fortigate_neutron_ml2_driver
+        if [[ $Q_DVR_MODE != "legacy" ]] && is_service_enabled n-cpu; then
+            configure_builtin_fortivm
+        fi
+        if [[ $Q_FORTINET_PLUGIN_FG_IP == "169.254.254.100" ]]; then
+            configure_builtin_fortivm
+        fi
     elif [[ "$1" == "stack" && "$2" == "extra" ]]; then
         configure_tempest_for_fortigate_plugin
     fi
@@ -152,6 +216,16 @@ execute restore config ftp $FGT_CONFIG_PATH $FTP_SERVER $FTP_USER $FTP_PASS
 y
 exit
 EOF
+        fi
+        if is_service_enabled n-cpu; then
+            sudo ovs-vsctl --if-exists del-port br-${Q_FORTINET_TENANT_INTERFACE} ${Q_FORTINET_TENANT_INTERFACE}
+            sudo ovs-vsctl --if-exists del-br br-${Q_FORTINET_TENANT_INTERFACE}
+        fi
+        if [[ $Q_DVR_MODE != "legacy" ]] && is_service_enabled n-cpu; then
+            clean_builtin_fortivm
+        fi
+        if [[ $Q_FORTINET_PLUGIN_FG_IP == "169.254.254.100" ]]; then
+            clean_builtin_fortivm
         fi
     fi
 

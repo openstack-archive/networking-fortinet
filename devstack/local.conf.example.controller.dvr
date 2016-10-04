@@ -1,13 +1,14 @@
 [[local|localrc]]
 
 disable_service n-net
+disable_service n-cpu
 disable_service ceilometer-acompute
 disable_service tempest
-enable_service q-svc q-fwaas q-agt n-novnc
+enable_service q-svc q-fwaas n-novnc
 
 # CHANGEME: customized git repo location
-enable_plugin networking-fortinet file:///home/stack/networking-fortinet master
-#enable_plugin networking-fortinet https://git.openstack.com/openstack/networking-fortinet master
+enable_plugin networking-fortinet file:///home/stack/networking-fortinet stable/liberty
+#enable_plugin networking-fortinet https://github.com/jerryz1982/networking-fortinet stable/liberty
 
 IP_VERSION=4
 Q_PLUGIN=ml2
@@ -20,26 +21,20 @@ Q_ML2_PLUGIN_VLAN_TYPE_OPTIONS='network_vlan_ranges=physnet1:1009:1099'
 Q_ML2_PLUGIN_TYPE_DRIVERS=local,flat,vlan,gre,vxlan
 Q_ML2_TENANT_NETWORK_TYPE=vlan
 PROVIDER_NETWORK_TYPE=vlan
-PHYSICAL_NETWORK=physnet1
 ENABLE_TENANT_TUNNELS=False
+Q_DVR_MODE=dvr_snat
 
 # CHANGEME: floating ip information for your setup.
 Q_FLOATING_ALLOCATION_POOL=start=10.160.38.241,end=10.160.38.250
 FLOATING_RANGE=10.160.38.1/24
 PUBLIC_NETWORK_GATEWAY=10.160.38.1
 
-# CHANGEME: if q-fwwass is enabled and fortigate is used as firewall.
+# CHANGEME: if q-fwaas is enabled and fortigate is used as firewall.
 FWAAS_PLUGIN=fwaas_fortinet
 
-# CHANGEME: The interface for tenant traffic
-Q_FORTINET_TENANT_INTERFACE=eth2
-OVS_PHYSICAL_BRIDGE=br-${Q_FORTINET_TENANT_INTERFACE}
-
 # fortigate ml2 plugin parameters
-# CHANGEME: URL of FGTVM image(optional)
-Q_FORTINET_IMAGE_URL=
 # CHANGEME: ip address of the fortigate rest API
-Q_FORTINET_PLUGIN_FG_IP=192.168.121.187
+Q_FORTINET_PLUGIN_FG_IP=10.160.2.230
 # CHANGEME: interface for tenant traffic
 Q_FORTINET_PLUGIN_FG_INT_INF=port2
 # CHANGEME: interface for external traffic
@@ -78,13 +73,13 @@ DATABASE_TYPE=mysql
 
 # networking configuration parameters
 # CHANGEME: control plane nic
-HOST_IP_IFACE=eth1
+HOST_IP_IFACE=eth0
 
 # logging configuration parameters
 
 LOGFILE=/opt/stack/logs/stack.sh.log
-VERBOSE=False
-ENABLE_DEBUG_LOG_LEVEL=False
+VERBOSE=True
+ENABLE_DEBUG_LOG_LEVEL=True
 LOG_COLOR=False
 SCREEN_LOGDIR=/opt/stack/logs
 
