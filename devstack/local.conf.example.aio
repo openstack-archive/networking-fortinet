@@ -1,13 +1,9 @@
 [[local|localrc]]
 
-disable_service n-net
+disable_service n-net q-meta q-dhcp q-l3
 disable_service ceilometer-acompute
 disable_service tempest
 enable_service q-svc q-fwaas q-agt n-novnc
-
-# CHANGEME: customized git repo location
-enable_plugin networking-fortinet file:///home/stack/networking-fortinet stable/newton
-#enable_plugin networking-fortinet https://git.openstack.com/openstack/networking-fortinet stable/newton
 
 IP_VERSION=4
 Q_PLUGIN=ml2
@@ -16,12 +12,18 @@ Q_L3_ROUTER_PER_TENANT=True
 ENABLE_TENANT_VLANS=True
 ML2_L3_PLUGIN=router_fortinet
 Q_ML2_PLUGIN_MECHANISM_DRIVERS='openvswitch,fortinet'
-Q_ML2_PLUGIN_VLAN_TYPE_OPTIONS='network_vlan_ranges=physnet1:1009:1099'
 Q_ML2_PLUGIN_TYPE_DRIVERS=local,flat,vlan,gre,vxlan
 Q_ML2_TENANT_NETWORK_TYPE=vlan
 PROVIDER_NETWORK_TYPE=vlan
 PHYSICAL_NETWORK=physnet1
 ENABLE_TENANT_TUNNELS=False
+
+# CHANGEME: customized git repo location
+enable_plugin networking-fortinet file:///home/stack/networking-fortinet stable/newton
+#enable_plugin networking-fortinet https://git.openstack.com/openstack/networking-fortinet stable/newton
+
+# CHANGEME: vlan range for tenant networks
+Q_ML2_PLUGIN_VLAN_TYPE_OPTIONS='network_vlan_ranges=physnet1:1009:1099'
 
 # CHANGEME: floating ip information for your setup.
 Q_FLOATING_ALLOCATION_POOL=start=10.160.38.241,end=10.160.38.250
@@ -29,20 +31,40 @@ FLOATING_RANGE=10.160.38.1/24
 PUBLIC_NETWORK_GATEWAY=10.160.38.1
 
 # CHANGEME: if q-fwwass is enabled and fortigate is used as firewall.
+enable_plugin neutron-fwaas https://git.openstack.org/openstack/neutron-fwaas stable/newton
 FWAAS_PLUGIN=fwaas_fortinet
 
-# CHANGEME: The interface for tenant traffic
+# CHANGEME: The interface for tenant traffic, required on compute nodes
+# and controller if a builtin fortivm is used.
 Q_FORTINET_TENANT_INTERFACE=eth2
 OVS_PHYSICAL_BRIDGE=br-${Q_FORTINET_TENANT_INTERFACE}
 
+# CHANGEME: The interface for external traffic, required if builtin fortivm
+# is used on controller. It is the NIC with external network access.
+PUBLIC_INTERFACE=eth3
+
+# CHANGEME: License for builtin fortivm, required if builtin vm is used. Replace
+# "x"-s with the content of license file.
+Q_FORTINET_FORTIVM_LIC="-----BEGIN FGT VM LICENSE-----
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+-----END FGT VM LICENSE-----"
+
 # fortigate ml2 plugin parameters
-# CHANGEME: ip address of the fortigate rest API
+# CHANGEME: URL of FGTVM image(if use a builtin fortivm on controller as
+# network node, it is required)
+Q_FORTINET_IMAGE_URL=
+# CHANGEME: ip address of the fortigate rest API, leave it blank if a
+# builtin fortivm is preferred, so that a fortivm will be started within
+# the controller, no external fortivm is required, nor any human intervention.
 Q_FORTINET_PLUGIN_FG_IP=192.168.121.187
-# CHANGEME: interface for tenant traffic
+# CHANGEME: interface for tenant traffic, leave unchanged if builtin vm is used.
 Q_FORTINET_PLUGIN_FG_INT_INF=port2
-# CHANGEME: interface for external traffic
+# CHANGEME: interface for external traffic, leave unchanged if builtin vm is used.
 Q_FORTINET_PLUGIN_FG_EXT_INF=port3
-# CHANGEME: if use fortivm set to False, True if hardware npu available
+# CHANGEME: if use fortivm set to False, True if hardware npu available, leave
+# unchanged if builtin vm is used.
 Q_FORTINET_PLUGIN_NPU_AVAILABLE=False
 # CHANGEME: fortigate username
 Q_FORTINET_PLUGIN_FG_USERNAME=admin
@@ -81,8 +103,8 @@ HOST_IP_IFACE=eth1
 # logging configuration parameters
 
 LOGFILE=/opt/stack/logs/stack.sh.log
-VERBOSE=False
-ENABLE_DEBUG_LOG_LEVEL=False
+VERBOSE=True
+ENABLE_DEBUG_LOG_LEVEL=True
 LOG_COLOR=False
 SCREEN_LOGDIR=/opt/stack/logs
 
