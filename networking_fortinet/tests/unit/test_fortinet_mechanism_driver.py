@@ -13,11 +13,11 @@
 #    under the License.
 
 import mock
-from neutron.tests import base
 from oslo_config import cfg
 from oslo_db.sqlalchemy import session
 import six
 
+from networking_fortinet.common import config
 from networking_fortinet.ml2 import mech_fortinet
 from networking_fortinet.tests.unit import (
     test_fortinet_common as mocked)
@@ -27,7 +27,7 @@ TEST_SEG1 = 'seg1'
 SUPPORTED_DR = ['vlan']
 
 
-class TestFortinetMechDriver(base.BaseTestCase,
+class TestFortinetMechDriver(mocked.FortinetTestCase,
                              mocked.ConfigMixin):
 
     def setUp(self):
@@ -36,6 +36,9 @@ class TestFortinetMechDriver(base.BaseTestCase,
         self.driver = mech_fortinet.FortinetMechanismDriver()
         self.driver.sync_conf_to_db = mock.Mock()
         self.driver.sync_conf_to_db.return_value = 'ok'
+        self.driver.Fortinet_init = mock.Mock()
+        self.driver.Fortinet_init.return_value = 'ok'
+        self.driver._fortigate = config.fgt_info
         self.patcher1 = mock.patch(
             'networking_fortinet.db.models.Fortinet_ML2_Namespace')
         self.patcher2 = mock.patch(

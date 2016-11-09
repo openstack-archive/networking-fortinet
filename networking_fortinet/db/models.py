@@ -17,8 +17,7 @@
 """Fortinet specific database schema/model."""
 
 import copy
-from neutron.db import model_base
-from neutron.db import models_v2
+from neutron_lib.db import model_base
 from oslo_db import exception as os_db_exception
 from oslo_log import log as logging
 import six
@@ -265,7 +264,7 @@ class Fortinet_ML2_ReservedIP(model_base.BASEV2, DBbase):
         return record.edit_id
 
 
-class Fortinet_Static_Router(model_base.BASEV2, models_v2.HasId, DBbase):
+class Fortinet_Static_Router(model_base.BASEV2, model_base.HasId, DBbase):
     """Schema for Fortinet static router."""
     vdom = sa.Column(sa.String(11))
     subnet_id = sa.Column(sa.String(36))
@@ -275,7 +274,7 @@ class Fortinet_Static_Router(model_base.BASEV2, models_v2.HasId, DBbase):
     edit_id = sa.Column(sa.Integer)
 
 
-class Fortinet_Vlink_Vlan_Allocation(model_base.BASEV2, models_v2.HasId,
+class Fortinet_Vlink_Vlan_Allocation(model_base.BASEV2, model_base.HasId,
                                      DBbase):
     """Schema for Fortinet vlink vlan interface."""
     vdom = sa.Column(sa.String(11))
@@ -390,7 +389,7 @@ class Fortinet_Vdom_Vlink(model_base.BASEV2, DBbase):
         return super(Fortinet_Vdom_Vlink, cls).add_record(context, **kwargs)
 
 
-class Fortinet_Firewall_Policy(model_base.BASEV2, models_v2.HasId, DBbase):
+class Fortinet_Firewall_Policy(model_base.BASEV2, model_base.HasId, DBbase):
     """Schema for Fortinet firewall policy."""
     __tablename__ = 'fortinet_firewall_policies'
     vdom = sa.Column(sa.String(11))

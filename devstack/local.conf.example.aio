@@ -6,8 +6,8 @@ disable_service tempest
 enable_service q-svc q-fwaas q-agt n-novnc
 
 # CHANGEME: customized git repo location
-enable_plugin networking-fortinet file:///home/stack/networking-fortinet master
-#enable_plugin networking-fortinet https://git.openstack.com/openstack/networking-fortinet master
+enable_plugin networking-fortinet file:///home/stack/networking-fortinet stable/newton
+#enable_plugin networking-fortinet https://git.openstack.com/openstack/networking-fortinet stable/newton
 
 IP_VERSION=4
 Q_PLUGIN=ml2

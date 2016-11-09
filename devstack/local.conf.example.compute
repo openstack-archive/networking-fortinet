@@ -4,8 +4,8 @@ disable_service n-net
 disable_service ceilometer-acompute
 
 # CHANGEME: networking-fortinet plugin repo url
-enable_plugin networking-fortinet file:///home/stack/networking-fortinet master
-#enable_plugin networking-fortinet https://git.openstack.com/openstack/networking-fortinet master
+enable_plugin networking-fortinet file:///home/stack/networking-fortinet stable/newton
+#enable_plugin networking-fortinet https://git.openstack.com/openstack/networking-fortinet stable/newton
 
 Q_PLUGIN=ml2
 IP_VERSION=4

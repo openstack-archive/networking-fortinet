@@ -23,9 +23,8 @@ import types
 import eventlet
 import mock
 from oslo_log import log as logging
+from oslotest import base
 import six.moves.urllib as urllib
-
-from neutron.tests import base
 
 from networking_fortinet._i18n import _LI
 from networking_fortinet.api_client import client as fortiosclient
