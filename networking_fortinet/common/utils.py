@@ -16,9 +16,9 @@ import netaddr
 from oslo_log import log as logging
 from oslo_serialization import jsonutils
 
-from neutron.db import l3_db
+from neutron.db.models import l3 as l3_db
+from neutron.db.models import segment as segments_db
 from neutron.db import models_v2
-from neutron.db import segments_db
 
 from networking_fortinet.api_client import exception
 from networking_fortinet.common import constants as const

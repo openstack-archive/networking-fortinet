@@ -16,9 +16,10 @@
 import requests
 
 from oslo_config import cfg
+from oslotest import base
 
-from neutron.tests import base
-
+import fixtures
+import warnings
 
 OK = requests.codes.ok
 
@@ -48,8 +49,6 @@ class ConfigMixin(object):
         self.mocked_parser = None
 
     def set_up_mocks(self):
-        # Mock the configuration file
-        base.BaseTestCase.config_parse()
 
         cfg.CONF.set_override('service_plugins', 'router_fortinet')
 
@@ -93,3 +92,24 @@ class FakeDbContract(object):
 
     def __init__(self, contract_id):
         self.contract_id = contract_id
+
+
+class WarningsFixture(fixtures.Fixture):
+    """Filters out warnings during test runs."""
+
+    warning_types = (
+        DeprecationWarning, PendingDeprecationWarning, ImportWarning
+    )
+
+    def setUp(self):
+        super(WarningsFixture, self).setUp()
+        self.addCleanup(warnings.resetwarnings)
+        for wtype in self.warning_types:
+            warnings.simplefilter("once", wtype)
+            self.addCleanup(warnings.resetwarnings)
+
+
+class FortinetTestCase(base.BaseTestCase):
+    def setUp(self):
+        super(FortinetTestCase, self).setUp()
+        self.useFixture(WarningsFixture())
