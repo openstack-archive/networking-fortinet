@@ -20,7 +20,7 @@ from oslo_db.sqlalchemy import session
 import sqlalchemy as sa
 from sqlalchemy import event
 
-from neutron.db import model_base
+from neutron_lib.db import model_base
 
 MYSQL_ENGINE = None
 FGT_VERSION_TABLE = 'alembic_version_fortinet'
