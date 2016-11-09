@@ -23,7 +23,7 @@ from oslo_log import log as logging
 
 from neutron.common import constants as l3_constants
 from neutron.db import api as db_api
-from neutron.db import external_net_db as ext_db
+from neutron.db.models import external_net as ext_db
 from neutron.db import models_v2
 from neutron.extensions import portbindings
 

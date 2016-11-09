@@ -18,11 +18,10 @@ import uuid
 
 from eventlet import event
 from eventlet import greenthread
+from neutron_lib import exceptions
 from oslo_log import log as logging
 from oslo_service import loopingcall
 import six
-
-from neutron.common import exceptions
 
 from networking_fortinet._i18n import _, _LE, _LI
 from networking_fortinet.common import resources
