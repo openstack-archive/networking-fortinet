@@ -18,11 +18,11 @@ from netaddr import IPNetwork
 from oslo_log import log as logging
 from oslo_utils import excutils
 
+from neutron_lib import constants as consts
+
 from neutron.api import extensions as neutron_extensions
-from neutron.api.v2 import attributes as attr
-from neutron.common import constants as l3_consts
 from neutron import context as neutron_context
-from neutron.db import l3_db
+from neutron.db.models import l3 as l3_db
 from neutron import manager
 from neutron.plugins.common import constants as const
 from neutron_fwaas.db.firewall import firewall_db
@@ -108,7 +108,7 @@ class FortinetFirewallPlugin(
         # and not firewall db
         LOG.debug("# _get_routers_for_create_firewall called Fortinet_plugin")
         router_ids = firewall['firewall'].pop('router_ids', None)
-        if router_ids == attr.ATTR_NOT_SPECIFIED:
+        if router_ids == consts.ATTR_NOT_SPECIFIED:
             # old semantics router-ids keyword not specified pick up
             # all routers on tenant.
             l3_plugin = manager.NeutronManager.get_service_plugins().get(
@@ -695,7 +695,7 @@ class FortinetFirewallPlugin(
             return fw_fips
         db_fips = fortinet_db.query_records(
             context, l3_db.FloatingIP, tenant_id=tenant_id,
-            status=l3_consts.FLOATINGIP_STATUS_ACTIVE)
+            status=consts.FLOATINGIP_STATUS_ACTIVE)
         for fip in db_fips:
             if getattr(fip, 'fixed_ip_address', None) and \
                     IPAddress(fip.fixed_ip_address) in IPNetwork(fw_net):

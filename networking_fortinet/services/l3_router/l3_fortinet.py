@@ -21,9 +21,10 @@ from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import excutils
 
-from neutron.common import constants as l3_constants
-from neutron.common import exceptions as n_exc
-from neutron.db import l3_db
+from neutron_lib import constants as l3_constants
+from neutron_lib import exceptions as n_exc
+
+from neutron.db.models import l3 as l3_db
 from neutron import manager
 from neutron.plugins.common import constants as service_consts
 from neutron.plugins.ml2 import db
