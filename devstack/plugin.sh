@@ -62,8 +62,6 @@ PING_TIMEOUT=${PING_TIMEOUT:-300}
 # The project directory
 NETWORKING_FGT_DIR=$DEST/networking-fortinet
 
-ABSOLUTE_PATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)
-
 source $TOP_DIR/lib/neutron_plugins/ml2
 
 function install_fortigate_neutron_ml2_driver {
@@ -134,8 +132,6 @@ if is_service_enabled fortinet-neutron; then
     if [[ "$1" == "source" ]]; then
         # no-op
         :
-    elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
-        source $ABSOLUTE_PATH/l3
     elif [[ "$1" == "stack" && "$2" == "install" ]]; then
         install_fortigate_neutron_ml2_driver
     elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
