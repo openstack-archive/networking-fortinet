@@ -104,7 +104,7 @@ class FWaaSScenarioTest(fwaas_client.FWaaSClientMixin,
         :param dns_nameservers: list of dns servers to send to subnet.
         :returns: network, subnet, router
         """
-        if CONF.baremetal.driver_enabled:
+        if CONF.network.shared_physical_network:
             # NOTE(Shrews): This exception is for environments where tenant
             # credential isolation is available, but network separation is
             # not (the current baremetal case). Likely can be removed when
