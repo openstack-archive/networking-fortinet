@@ -19,11 +19,11 @@ from oslo_log import log as logging
 from oslo_utils import excutils
 
 from neutron_lib import constants as consts
+from neutron_lib.plugins import directory
 
 from neutron.api import extensions as neutron_extensions
 from neutron import context as neutron_context
 from neutron.db.models import l3 as l3_db
-from neutron import manager
 from neutron.plugins.common import constants as const
 from neutron_fwaas.db.firewall import firewall_db
 from neutron_fwaas.db.firewall import firewall_router_insertion_db
@@ -111,8 +111,7 @@ class FortinetFirewallPlugin(
         if router_ids == consts.ATTR_NOT_SPECIFIED:
             # old semantics router-ids keyword not specified pick up
             # all routers on tenant.
-            l3_plugin = manager.NeutronManager.get_service_plugins().get(
-                const.L3_ROUTER_NAT)
+            l3_plugin = directory.get_plugins(const.L3_ROUTER_NAT)
             ctx = neutron_context.get_admin_context()
             routers = l3_plugin.get_routers(ctx)
             router_ids = [
