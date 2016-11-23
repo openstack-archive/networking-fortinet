@@ -124,10 +124,12 @@ function configure_fortigate_neutron_ml2_driver {
     if is_service_enabled n-cpu || [[ $Q_FORTINET_PLUGIN_FG_IP == "169.254.254.100" ]]; then
         sudo ovs-vsctl --no-wait -- --may-exist add-br \
             br-${Q_FORTINET_TENANT_INTERFACE}
-        sudo ovs-vsctl --no-wait -- --may-exist add-port \
-            br-${Q_FORTINET_TENANT_INTERFACE} ${Q_FORTINET_TENANT_INTERFACE}
         sudo ip link set br-${Q_FORTINET_TENANT_INTERFACE} up
-        sudo ip link set ${Q_FORTINET_TENANT_INTERFACE} up
+        if ! [[ $Q_FORTINET_TENANT_INTERFACE =~ "test" ]]; then
+            sudo ovs-vsctl --no-wait -- --may-exist add-port \
+                br-${Q_FORTINET_TENANT_INTERFACE} ${Q_FORTINET_TENANT_INTERFACE}
+            sudo ip link set ${Q_FORTINET_TENANT_INTERFACE} up
+        fi
         iniset /$Q_PLUGIN_CONF_FILE ovs of_interface ovs-ofctl
     fi
 }
@@ -164,8 +166,17 @@ EOF
         sudo virsh net-start $FGT_MGMT_NET
         sudo virsh net-autostart $FGT_MGMT_NET
         _neutron_ovs_base_add_public_bridge
-        sudo ovs-vsctl --no-wait -- --may-exist add-port $PUBLIC_BRIDGE $PUBLIC_INTERFACE
-        sudo ip link set $PUBLIC_INTERFACE up
+        if [[ $PUBLIC_INTERFACE =~ "test" ]]; then
+            # use localhost network and configure snat
+            sudo ip addr add dev $PUBLIC_BRIDGE $PUBLIC_NETWORK_GATEWAY/24
+            sudo iptables -A FORWARD -d $FLOATING_RANGE -o $PUBLIC_BRIDGE -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+            sudo iptables -A FORWARD -s $FLOATING_RANGE -i $PUBLIC_BRIDGE -j ACCEPT
+            sudo iptables -A FORWARD -i $PUBLIC_BRIDGE -o $PUBLIC_BRIDGE -j ACCEPT
+        else
+            # use provider network
+            sudo ovs-vsctl --no-wait -- --may-exist add-port $PUBLIC_BRIDGE $PUBLIC_INTERFACE
+            sudo ip link set $PUBLIC_INTERFACE up
+        fi
         sudo ip link set $PUBLIC_BRIDGE up
         echo "preparing config drive"
         cat > $NETWORKING_FGT_DIR/devstack/cloud_init/openstack/content/0000 << EOF
