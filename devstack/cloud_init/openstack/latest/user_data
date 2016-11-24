@@ -18,3 +18,7 @@ config system global
     set admintimeout 480
     set vdom-admin enable
 end
+config vdom
+    edit "osvdmext"
+    next
+end
