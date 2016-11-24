@@ -200,7 +200,7 @@ EOF
         # wait until fortivm's restful api is available.
         timeout 120 sh -c 'while ! wget  --no-proxy --no-check-certificate -q -O- http://169.254.254.100; do sleep 0.5; done'
         sleep 60
-        ssh -o StrictHostKeyChecking=no -tt admin@169.254.254.100 << 'EOF' > ${LOGDIR}/fgt.log &
+        ssh -o StrictHostKeyChecking=no -tt admin@169.254.254.100 << 'EOF' > fgt.log &
 config global
 diag debug enable
 diag debug application httpsd 255
