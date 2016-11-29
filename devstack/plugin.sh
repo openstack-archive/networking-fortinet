@@ -172,6 +172,11 @@ EOF
             sudo iptables -A FORWARD -d $FLOATING_RANGE -o $PUBLIC_BRIDGE -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
             sudo iptables -A FORWARD -s $FLOATING_RANGE -i $PUBLIC_BRIDGE -j ACCEPT
             sudo iptables -A FORWARD -i $PUBLIC_BRIDGE -o $PUBLIC_BRIDGE -j ACCEPT
+            sudo iptables -t nat -A POSTROUTING -s $FLOATING_RANGE -d 224.0.0.0/24 -j RETURN
+            sudo iptables -t nat -A POSTROUTING -s $FLOATING_RANGE -d 255.255.255.255/32 -j RETURN
+            sudo iptables -t nat -A POSTROUTING -s $FLOATING_RANGE ! -d $FLOATING_RANGE -p tcp -j MASQUERADE --to-ports 1024-65535
+            sudo iptables -t nat -A POSTROUTING -s $FLOATING_RANGE ! -d $FLOATING_RANGE -p udp -j MASQUERADE --to-ports 1024-65535
+            sudo iptables -t nat -A POSTROUTING -s $FLOATING_RANGE ! -d $FLOATING_RANGE -j MASQUERADE
         else
             # use provider network
             sudo ovs-vsctl --no-wait -- --may-exist add-port $PUBLIC_BRIDGE $PUBLIC_INTERFACE
@@ -213,6 +218,21 @@ function clean_builtin_fortivm {
         sudo virsh net-destroy $FGT_MGMT_NET || true
         sudo virsh net-undefine $FGT_MGMT_NET
     fi
+
+    # clean iptable rules
+    sudo iptables -D FORWARD -d 169.254.254.100/32 -p tcp -m tcp --dport 443 -m state --state NEW,RELATED,ESTABLISHED -j ACCEPT
+    sudo iptables -t nat -D PREROUTING -p tcp -m tcp --dport 9443 -j DNAT --to-destination 169.254.254.100:443
+
+    if [[ $PUBLIC_INTERFACE =~ "test" ]]; then
+        sudo iptables -D FORWARD -d $FLOATING_RANGE -o $PUBLIC_BRIDGE -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+        sudo iptables -D FORWARD -s $FLOATING_RANGE -i $PUBLIC_BRIDGE -j ACCEPT
+        sudo iptables -D FORWARD -i $PUBLIC_BRIDGE -o $PUBLIC_BRIDGE -j ACCEPT
+        sudo iptables -t nat -D POSTROUTING -s $FLOATING_RANGE -d 224.0.0.0/24 -j RETURN
+        sudo iptables -t nat -D POSTROUTING -s $FLOATING_RANGE -d 255.255.255.255/32 -j RETURN
+        sudo iptables -t nat -D POSTROUTING -s $FLOATING_RANGE ! -d $FLOATING_RANGE -p tcp -j MASQUERADE --to-ports 1024-65535
+        sudo iptables -t nat -D POSTROUTING -s $FLOATING_RANGE ! -d $FLOATING_RANGE -p udp -j MASQUERADE --to-ports 1024-65535
+        sudo iptables -t nat -D POSTROUTING -s $FLOATING_RANGE ! -d $FLOATING_RANGE -j MASQUERADE
+    fi
 }
 
 
@@ -251,8 +271,6 @@ EOF
         fi
         if $_use_builtin_vm; then
             clean_builtin_fortivm
-            sudo iptables -D FORWARD -d 169.254.254.100/32 -p tcp -m tcp --dport 443 -m state --state NEW,RELATED,ESTABLISHED -j ACCEPT
-            sudo iptables -t nat -D PREROUTING -p tcp -m tcp --dport 9443 -j DNAT --to-destination 169.254.254.100:443
         fi
     fi
 
