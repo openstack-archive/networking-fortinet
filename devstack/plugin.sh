@@ -248,11 +248,14 @@ if is_service_enabled fortinet-neutron; then
             configure_builtin_fortivm
         fi
     elif [[ "$1" == "stack" && "$2" == "extra" ]]; then
-        configure_tempest_for_fortigate_plugin
         # Add port forwarding for fortivm so GUI can be accessed outside
         if $_use_builtin_vm; then
             sudo iptables -I FORWARD -d 169.254.254.100/32 -p tcp -m tcp --dport 443 -m state --state NEW,RELATED,ESTABLISHED -j ACCEPT
             sudo iptables -t nat -A PREROUTING -p tcp -m tcp --dport 9443 -j DNAT --to-destination 169.254.254.100:443
+        fi
+    elif [[ "$1" == "stack" && "$2" == "test-config" ]]; then
+        if is_service_enabled tempest; then
+            configure_tempest_for_fortigate_plugin
         fi
     fi
 
