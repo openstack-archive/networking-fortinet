@@ -137,10 +137,8 @@ function configure_fortigate_neutron_ml2_driver {
 function configure_tempest_for_fortigate_plugin {
     # sometimes it can take 3 dhcp discover attempts for vm
     # to get an ip address in our ci system.
-    if is_service_enabled tempest; then
-        iniset /$TEMPEST_CONFIG compute ping_timeout $PING_TIMEOUT
-        iniset /$TEMPEST_CONFIG fortigate enable_default_fwrule $Q_FORTINET_FWAAS_ENABLE_DEFAULT_FWRULE
-    fi
+    iniset /$TEMPEST_CONFIG compute ping_timeout $PING_TIMEOUT
+    iniset /$TEMPEST_CONFIG fortigate enable_default_fwrule $Q_FORTINET_FWAAS_ENABLE_DEFAULT_FWRULE
 }
 
 function has_neutron_plugin_security_group {
@@ -248,11 +246,14 @@ if is_service_enabled fortinet-neutron; then
             configure_builtin_fortivm
         fi
     elif [[ "$1" == "stack" && "$2" == "extra" ]]; then
-        configure_tempest_for_fortigate_plugin
         # Add port forwarding for fortivm so GUI can be accessed outside
         if $_use_builtin_vm; then
             sudo iptables -I FORWARD -d 169.254.254.100/32 -p tcp -m tcp --dport 443 -m state --state NEW,RELATED,ESTABLISHED -j ACCEPT
             sudo iptables -t nat -A PREROUTING -p tcp -m tcp --dport 9443 -j DNAT --to-destination 169.254.254.100:443
+        fi
+    elif [[ "$1" == "stack" && "$2" == "test-config" ]]; then
+        if is_service_enabled tempest; then
+            configure_tempest_for_fortigate_plugin
         fi
     fi
 
