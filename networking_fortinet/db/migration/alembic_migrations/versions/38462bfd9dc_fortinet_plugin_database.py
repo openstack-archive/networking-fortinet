@@ -65,9 +65,7 @@ def upgrade():
         sa.Column('secondary_ip', mysql.VARCHAR(length=11),
                   server_default=sa.text(u"'enable'"), nullable=True),
         sa.Column('alias', mysql.VARCHAR(length=32), nullable=True),
-        sa.PrimaryKeyConstraint('name'),
-        mysql_default_charset=u'utf8',
-        mysql_engine=u'InnoDB'
+        sa.PrimaryKeyConstraint('name')
     )
     op.create_table('fortinet_ml2_reservedips',
         sa.Column('port_id', mysql.VARCHAR(length=36), nullable=False),
@@ -77,9 +75,7 @@ def upgrade():
         sa.Column('vdom', mysql.VARCHAR(length=11), nullable=True),
         sa.Column('edit_id', mysql.INTEGER(display_width=11),
                   autoincrement=False, nullable=True),
-        sa.PrimaryKeyConstraint('port_id'),
-        mysql_default_charset=u'utf8',
-        mysql_engine=u'InnoDB'
+        sa.PrimaryKeyConstraint('port_id')
     )
     op.create_table('fortinet_firewall_addresses',
         sa.Column('name', mysql.VARCHAR(length=40),
@@ -89,24 +85,18 @@ def upgrade():
         sa.Column('associated_interface', mysql.VARCHAR(length=11),
                   nullable=True),
         sa.Column('group', mysql.VARCHAR(length=32), nullable=True),
-        sa.PrimaryKeyConstraint('name', 'vdom'),
-        mysql_default_charset=u'utf8',
-        mysql_engine=u'InnoDB'
+        sa.PrimaryKeyConstraint('name', 'vdom')
     )
     op.create_table('fortinet_ml2_namespaces',
         sa.Column('id', mysql.INTEGER(display_width=11), nullable=False),
         sa.Column('tenant_id', mysql.VARCHAR(length=36), nullable=False),
         sa.Column('vdom', mysql.VARCHAR(length=11), nullable=True),
-        sa.PrimaryKeyConstraint('id', 'tenant_id'),
-        mysql_default_charset=u'utf8',
-        mysql_engine=u'InnoDB'
+        sa.PrimaryKeyConstraint('id', 'tenant_id')
     )
     op.create_table('fortinet_vdom_vlinks',
         sa.Column('name', mysql.VARCHAR(length=11)),
         sa.Column('vdom', mysql.VARCHAR(length=11)),
-        sa.PrimaryKeyConstraint('name', 'vdom'),
-        mysql_default_charset=u'utf8',
-        mysql_engine=u'InnoDB'
+        sa.PrimaryKeyConstraint('name', 'vdom')
     )
     op.create_table('fortinet_vlink_vlan_allocations',
         sa.Column('id', mysql.VARCHAR(length=36),
@@ -119,9 +109,7 @@ def upgrade():
         sa.Column('vlanid', mysql.INTEGER(display_width=11)),
         sa.Column('allocated', mysql.TINYINT(display_width=1),
                   autoincrement=False, nullable=True),
-        sa.PrimaryKeyConstraint('id'),
-        mysql_default_charset=u'utf8',
-        mysql_engine=u'InnoDB'
+        sa.PrimaryKeyConstraint('id')
     )
     op.create_table('fortinet_vlink_ip_allocations',
         sa.Column('vlink_ip_subnet', mysql.VARCHAR(length=32),
@@ -133,9 +121,7 @@ def upgrade():
         sa.ForeignKeyConstraint(['vlink_id'],
                                 ['fortinet_vlink_vlan_allocations.id'],
                                 ondelete='CASCADE'),
-        sa.PrimaryKeyConstraint('vlink_ip_subnet'),
-        mysql_default_charset=u'utf8',
-        mysql_engine=u'InnoDB'
+        sa.PrimaryKeyConstraint('vlink_ip_subnet')
     )
     op.create_table('fortinet_floatingip_allocations',
         sa.Column('ip_subnet', mysql.VARCHAR(length=32),
@@ -146,18 +132,14 @@ def upgrade():
         sa.Column('vip_name', mysql.VARCHAR(length=50), nullable=True),
         sa.Column('allocated', mysql.TINYINT(display_width=1),
                   autoincrement=False, nullable=True),
-        sa.PrimaryKeyConstraint('ip_subnet'),
-        mysql_default_charset=u'utf8',
-        mysql_engine=u'InnoDB'
+        sa.PrimaryKeyConstraint('ip_subnet')
     )
     op.create_table('fortinet_interface_subips',
         sa.Column('ip', mysql.VARCHAR(length=32),
                   server_default=sa.text(u"''"), nullable=False),
         sa.Column('name', mysql.VARCHAR(length=11), nullable=True),
         sa.Column('vdom', mysql.VARCHAR(length=11), nullable=True),
-        sa.PrimaryKeyConstraint('ip'),
-        mysql_default_charset=u'utf8',
-        mysql_engine=u'InnoDB'
+        sa.PrimaryKeyConstraint('ip')
     )
     op.create_table('fortinet_static_routers',
         sa.Column('id', mysql.VARCHAR(length=36),
@@ -169,9 +151,7 @@ def upgrade():
         sa.Column('gateway', mysql.VARCHAR(length=32), nullable=True),
         sa.Column('edit_id', mysql.INTEGER(display_width=11),
                   autoincrement=False, nullable=True),
-        sa.PrimaryKeyConstraint('id'),
-        mysql_default_charset=u'utf8',
-        mysql_engine=u'InnoDB'
+        sa.PrimaryKeyConstraint('id')
     )
     op.create_table('fortinet_firewall_ippools',
         sa.Column('name', mysql.VARCHAR(length=36),
@@ -182,9 +162,7 @@ def upgrade():
         sa.Column('type', mysql.VARCHAR(length=32),
                   server_default=sa.text(u"'one-to-one'"), nullable=True),
         sa.Column('comments', mysql.VARCHAR(length=32), nullable=True),
-        sa.PrimaryKeyConstraint('name'),
-        mysql_default_charset=u'utf8',
-        mysql_engine=u'InnoDB'
+        sa.PrimaryKeyConstraint('name')
     )
     op.create_table('fortinet_ml2_subnets',
         sa.Column('subnet_id', mysql.VARCHAR(length=36), nullable=False),
@@ -196,9 +174,7 @@ def upgrade():
         sa.Column('end_ip', mysql.VARCHAR(length=32), nullable=True),
         sa.Column('edit_id', mysql.INTEGER(display_width=11),
                   autoincrement=False, nullable=True),
-        sa.PrimaryKeyConstraint('subnet_id'),
-        mysql_default_charset=u'utf8',
-        mysql_engine=u'InnoDB'
+        sa.PrimaryKeyConstraint('subnet_id')
     )
     op.create_table('fortinet_firewall_policies',
         sa.Column('id', mysql.VARCHAR(length=36),
@@ -230,9 +206,7 @@ def upgrade():
         sa.Column('comments', mysql.VARCHAR(length=255), nullable=True),
         sa.Column('edit_id', mysql.INTEGER(display_width=11),
                   autoincrement=False, nullable=True),
-        sa.PrimaryKeyConstraint('id'),
-        mysql_default_charset=u'utf8',
-        mysql_engine=u'InnoDB'
+        sa.PrimaryKeyConstraint('id')
     )
     op.create_table('fortinet_firewall_vips',
         sa.Column('name', mysql.VARCHAR(length=36), nullable=False),
@@ -240,9 +214,7 @@ def upgrade():
         sa.Column('extip', mysql.VARCHAR(length=32), nullable=False),
         sa.Column('extintf', mysql.VARCHAR(length=32), nullable=False),
         sa.Column('mappedip', mysql.VARCHAR(length=32), nullable=True),
-        sa.PrimaryKeyConstraint('name', 'vdom'),
-        mysql_default_charset=u'utf8',
-        mysql_engine=u'InnoDB'
+        sa.PrimaryKeyConstraint('name', 'vdom')
     )
     op.create_table('fortinet_fw_rule_associations',
         sa.Column('fwr_id', mysql.VARCHAR(length=36),
@@ -255,8 +227,6 @@ def upgrade():
                   server_default=sa.text(u"''"), nullable=True),
         sa.ForeignKeyConstraint(['floatingip_id'], ['floatingips.id'],
             ondelete='CASCADE'),
-        sa.PrimaryKeyConstraint('fwr_id', 'fortinet_pid'),
-        mysql_default_charset=u'utf8',
-        mysql_engine=u'InnoDB'
+        sa.PrimaryKeyConstraint('fwr_id', 'fortinet_pid')
     )
     ### end Alembic commands ###
