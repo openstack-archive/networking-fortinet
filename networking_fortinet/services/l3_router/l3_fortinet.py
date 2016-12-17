@@ -132,7 +132,7 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
         with context.session.begin(subtransactions=True):
             info = super(FortinetL3ServicePlugin, self).add_router_interface(
                 context, router_id, interface_info)
-            port = db.get_port(context.session, info['port_id'])
+            port = db.get_port(context, info['port_id'])
             port['admin_state_up'] = True
             port['port'] = port
             LOG.debug("FortinetL3ServicePlugin: "
