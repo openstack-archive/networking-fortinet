@@ -1,0 +1,8 @@
+Code-Review+2: Jerry Zhao <xyzjerry@gmail.com>
+Workflow+1: Jerry Zhao <xyzjerry@gmail.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Thu, 22 Dec 2016 18:30:38 +0000
+Reviewed-on: https://review.openstack.org/412609
+Project: openstack/networking-fortinet
+Branch: refs/heads/stable/mitaka
