@@ -111,7 +111,7 @@ class FortinetFirewallPlugin(
         if router_ids == consts.ATTR_NOT_SPECIFIED:
             # old semantics router-ids keyword not specified pick up
             # all routers on tenant.
-            l3_plugin = directory.get_plugin(const.L3_ROUTER_NAT)
+            l3_plugin = directory.get_plugin(consts.L3)
             ctx = neutron_context.get_admin_context()
             routers = l3_plugin.get_routers(ctx)
             router_ids = [
