@@ -448,69 +448,69 @@ class TestFortigateFWaaS(base.FWaaSScenarioTest):
         #confirm_allowed2(ip_address=server2_floating_ip, username=ssh_login,
         #                 private_key=private_key2)
 
-    @test.idempotent_id('5b5f57bb-e3ca-4246-9174-bb5fe9298c5f')
+    @decorators.idempotent_id('5b5f57bb-e3ca-4246-9174-bb5fe9298c5f')
     def test_firewall_block_ip(self):
         self._test_firewall_basic(block=self._block_ip, allow=self._allow_ip,
                                   confirm_allowed=self._confirm_allowed_oneway)
 
-    @test.idempotent_id('5b5f57bb-e3ca-4246-9174-bb5fe9298c5e')
+    @decorators.idempotent_id('5b5f57bb-e3ca-4246-9174-bb5fe9298c5e')
     def test_firewall_block_subnet(self):
         self._test_firewall_basic(block=self._block_subnet,
                                   allow=self._allow_subnet,
                                   confirm_allowed=self._confirm_allowed_oneway)
 
-    @test.idempotent_id('22e23dd5-c00c-4510-87ea-4874c705a45f')
+    @decorators.idempotent_id('22e23dd5-c00c-4510-87ea-4874c705a45f')
     def test_firewall_block_icmp(self):
         self._test_firewall_basic(
             block=self._block_icmp,
             confirm_blocked=self._confirm_icmp_blocked_but_tcp)
 
-    @test.idempotent_id('5db47fa0-d3e1-49f5-b6ca-6e0fa6c397c6')
+    @decorators.idempotent_id('5db47fa0-d3e1-49f5-b6ca-6e0fa6c397c6')
     def test_firewall_insert_rule(self):
         self._test_firewall_basic(
             block=self._block_icmp,
             allow=self._allow_ssh_and_icmp,
             confirm_blocked=self._confirm_icmp_blocked_but_tcp)
 
-    @test.idempotent_id('20466b39-e356-4e58-bb8e-199d1172eb53')
+    @decorators.idempotent_id('20466b39-e356-4e58-bb8e-199d1172eb53')
     def test_firewall_remove_rule(self):
         self._test_firewall_basic(block=self._block_all_with_default_allow,
                                   allow=self._remove_rule,
                                   confirm_allowed=self._confirm_allow_novirus)
 
     @decorators.skip_because(bug="0363573")
-    @test.idempotent_id('deb5874a-cc43-468e-9ac6-42b9e8a767fd')
+    @decorators.idempotent_id('deb5874a-cc43-468e-9ac6-42b9e8a767fd')
     def test_firewall_disable_rule(self):
         self._test_firewall_basic(block=self._block_all_with_default_allow,
                                   allow=self._disable_rule)
 
-    @test.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede1')
+    @decorators.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede1')
     def test_firewall_remove_router_from_fw(self):
         self._test_firewall_basic(block=self._block_all_with_default_allow,
                                   allow=self._remove_router_from_fw)
 
-    @test.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede2')
+    @decorators.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede2')
     def test_firewall_update_ssh_policy_by_port(self):
         self._test_firewall_basic(block=self._block_ssh,
                                   allow=self._update_block_ssh_rule_by_port,
                                   confirm_blocked=self._confirm_ssh_blocked,
                                   confirm_allowed=self._confirm_allow_novirus)
 
-    @test.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede3')
+    @decorators.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede3')
     def test_firewall_update_ssh_policy_by_action(self):
         self._test_firewall_basic(block=self._block_ssh,
                                   allow=self._update_block_ssh_rule_by_action,
                                   confirm_blocked=self._confirm_ssh_blocked,
                                   confirm_allowed=self._confirm_allow_novirus)
 
-    @test.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede4')
+    @decorators.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede4')
     def test_firewall_update_ssh_policy_by_proto(self):
         self._test_firewall_basic(block=self._block_ssh,
                                   allow=self._update_block_ssh_rule_by_proto,
                                   confirm_blocked=self._confirm_ssh_blocked,
                                   confirm_allowed=self._confirm_allow_novirus)
 
-    @test.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede5')
+    @decorators.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede5')
     def test_firewall_empty_policy(self):
         if not self._default_allow():
             self._test_firewall_basic(block=self._empty_policy)
@@ -518,19 +518,19 @@ class TestFortigateFWaaS(base.FWaaSScenarioTest):
             self._test_firewall_basic(block=self._block_ip,
                                       allow=self._empty_existing_policy)
 
-    @test.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede6')
+    @decorators.idempotent_id('18b085f2-c63a-46b4-8764-d0e8f803ede6')
     def test_firewall_update_policy_with_new_rule(self):
         self._test_firewall_basic(block=self._block_ip,
                                   allow=self._update_policy_with_allow_rule,
                                   confirm_allowed=self._confirm_allow_novirus)
 
     @decorators.skip_because(bug="0363573")
-    @test.idempotent_id('30174d2a-820b-4939-85e2-49c735f7de0c')
+    @decorators.idempotent_id('30174d2a-820b-4939-85e2-49c735f7de0c')
     def test_firewall_all_disabled_rules(self):
         self._test_firewall_basic(block=self._all_disabled_rules)
 
     @decorators.skip_because(bug="0363573")
-    @test.idempotent_id('2233ade8-266c-4781-b052-fc0be93baa93')
+    @decorators.idempotent_id('2233ade8-266c-4781-b052-fc0be93baa93')
     def test_firewall_admin_disable(self):
         self._test_firewall_basic(block=self._admin_disable,
                                   allow=self._admin_enable)

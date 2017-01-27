@@ -18,6 +18,7 @@ from tempest import config
 from tempest import exceptions
 from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils import test_utils
+from tempest.lib import decorators
 from tempest.lib import exceptions as lib_exc
 from tempest import test
 
@@ -113,7 +114,7 @@ class FortigateFWaaSExtensionTestJSON(base.BaseFWaaSTest):
                  (fw_id, target_states))
             raise exceptions.TimeoutException(m)
 
-    @test.idempotent_id('60a20691-8496-4a2d-a54c-0d5145592624')
+    @decorators.idempotent_id('60a20691-8496-4a2d-a54c-0d5145592624')
     def test_list_firewall_rules(self):
         # List firewall rules
         fw_rules = self.firewall_rules_client.list_firewall_rules()
@@ -131,7 +132,7 @@ class FortigateFWaaSExtensionTestJSON(base.BaseFWaaSTest):
                         m['ip_version'],
                         m['enabled']) for m in fw_rules])
 
-    @test.idempotent_id('0e8e13fb-13f3-42fc-9e97-c016bc69645a')
+    @decorators.idempotent_id('0e8e13fb-13f3-42fc-9e97-c016bc69645a')
     def test_create_update_delete_firewall_rule(self):
         # Create firewall rule
         body = self.firewall_rules_client.create_firewall_rule(
@@ -152,7 +153,7 @@ class FortigateFWaaSExtensionTestJSON(base.BaseFWaaSTest):
         self.assertNotIn(fw_rule_id,
                          [m['id'] for m in fw_rules['firewall_rules']])
 
-    @test.idempotent_id('fb90dfb5-bb97-4191-a33c-4de7d5553629')
+    @decorators.idempotent_id('fb90dfb5-bb97-4191-a33c-4de7d5553629')
     def test_show_firewall_rule(self):
         # show a created firewall rule
         fw_rule = self.firewall_rules_client.show_firewall_rule(
@@ -160,7 +161,7 @@ class FortigateFWaaSExtensionTestJSON(base.BaseFWaaSTest):
         for key, value in six.iteritems(fw_rule['firewall_rule']):
             self.assertEqual(self.fw_rule[key], value)
 
-    @test.idempotent_id('5fcf7de9-e2b2-4de8-8b8f-d6affd5adc92')
+    @decorators.idempotent_id('5fcf7de9-e2b2-4de8-8b8f-d6affd5adc92')
     def test_list_firewall_policies(self):
         fw_policies = self.firewall_policies_client.list_firewall_policies()
         fw_policies = fw_policies['firewall_policies']
@@ -171,7 +172,7 @@ class FortigateFWaaSExtensionTestJSON(base.BaseFWaaSTest):
                         m['name'],
                         m['firewall_rules']) for m in fw_policies])
 
-    @test.idempotent_id('206059c6-a574-40c2-820c-81474c599274')
+    @decorators.idempotent_id('206059c6-a574-40c2-820c-81474c599274')
     def test_create_update_delete_firewall_policy(self):
         # Create firewall policy
         body = self.firewall_policies_client.create_firewall_policy(
@@ -193,7 +194,7 @@ class FortigateFWaaSExtensionTestJSON(base.BaseFWaaSTest):
         fw_policies = fw_policies['firewall_policies']
         self.assertNotIn(fw_policy_id, [m['id'] for m in fw_policies])
 
-    @test.idempotent_id('03189579-c485-412c-b033-4b12ab715b6e')
+    @decorators.idempotent_id('03189579-c485-412c-b033-4b12ab715b6e')
     def test_show_firewall_policy(self):
         # show a created firewall policy
         fw_policy = self.firewall_policies_client.show_firewall_policy(
@@ -202,7 +203,7 @@ class FortigateFWaaSExtensionTestJSON(base.BaseFWaaSTest):
         for key, value in six.iteritems(fw_policy):
             self.assertEqual(self.fw_policy[key], value)
 
-    @test.idempotent_id('b496a8ff-7abc-4a3f-96d9-1acbbcde2ba9')
+    @decorators.idempotent_id('b496a8ff-7abc-4a3f-96d9-1acbbcde2ba9')
     def test_create_show_delete_firewall(self):
         # Create tenant network resources required for an ACTIVE firewall
         network = self.create_network()
@@ -248,7 +249,7 @@ class FortigateFWaaSExtensionTestJSON(base.BaseFWaaSTest):
         self.firewalls_client.delete_firewall(firewall_id)
 
     # fortigate plugin only allow one router per tenant
-    @test.idempotent_id('4ea48c81-27c2-49fd-8c8f-bb617dc0755c')
+    @decorators.idempotent_id('4ea48c81-27c2-49fd-8c8f-bb617dc0755c')
     def test_firewall_insertion_mode_add_remove_router(self):
         # Create router
         router1 = self.create_router(
@@ -276,7 +277,7 @@ class FortigateFWaaSExtensionTestJSON(base.BaseFWaaSTest):
         self.assertNotIn(router1['id'], updated_firewall['router_ids'])
         self.assertEqual(0, len(updated_firewall['router_ids']))
 
-    @test.idempotent_id('1b5cf8f6-cd2e-4f3f-aaa0-e12c079b6d22')
+    @decorators.idempotent_id('1b5cf8f6-cd2e-4f3f-aaa0-e12c079b6d22')
     def test_firewall_insertion_mode_one_firewall_per_router(self):
         # Create router required for an ACTIVE firewall
         router = self.create_router(
@@ -301,7 +302,7 @@ class FortigateFWaaSExtensionTestJSON(base.BaseFWaaSTest):
             router_ids=[router['id']])
 
     @test.attr(type='smoke')
-    @test.idempotent_id('4ebfac1d-d521-44de-a4a0-81b79312f362')
+    @decorators.idempotent_id('4ebfac1d-d521-44de-a4a0-81b79312f362')
     def test_firewall_rule_insertion_position_removal_rule_from_policy(self):
         # Create firewall rule
         body = self.firewall_rules_client.create_firewall_rule(
@@ -368,7 +369,7 @@ class FortigateFWaaSExtensionTestJSON(base.BaseFWaaSTest):
         return [ruleid for ruleid in fw_policy['firewall_policy']
                 ['firewall_rules']]
 
-    @test.idempotent_id('d08ce90f-b7f8-4a24-8b34-50d1b035e6c8')
+    @decorators.idempotent_id('d08ce90f-b7f8-4a24-8b34-50d1b035e6c8')
     def test_update_firewall_policy_audited_attribute(self):
         # Create firewall rule
         body = self.firewall_rules_client.create_firewall_rule(
