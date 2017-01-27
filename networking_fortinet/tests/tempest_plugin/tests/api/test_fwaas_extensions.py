@@ -141,8 +141,8 @@ class FortigateFWaaSExtensionTestJSON(base.BaseFWaaSTest):
 
         # Update firewall rule
         body = self.firewall_rules_client.update_firewall_rule(fw_rule_id,
-                                                               shared=True)
-        self.assertTrue(body["firewall_rule"]['shared'])
+                                                               action="deny")
+        self.assertTrue("deny", body["firewall_rule"]['action'])
 
         # Delete firewall rule
         self.firewall_rules_client.delete_firewall_rule(fw_rule_id)
@@ -181,10 +181,8 @@ class FortigateFWaaSExtensionTestJSON(base.BaseFWaaSTest):
         # Update firewall policy
         body = self.firewall_policies_client.update_firewall_policy(
             fw_policy_id,
-            shared=True,
             name="updated_policy")
         updated_fw_policy = body["firewall_policy"]
-        self.assertTrue(updated_fw_policy['shared'])
         self.assertEqual("updated_policy", updated_fw_policy['name'])
 
         # Delete firewall policy
