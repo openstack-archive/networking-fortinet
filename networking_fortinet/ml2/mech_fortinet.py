@@ -158,6 +158,9 @@ class FortinetMechanismDriver(driver_api.MechanismDriver):
         network_name = network['name']
         tenant_id = network['tenant_id']
         segment = mech_context.network_segments[0]
+        LOG.debug("network is created in tenant %(tenant_id)s,"
+                  "segment id is %(segment)s", {"tenant_id": tenant_id,
+                   "segment": segment['segmentation_id']})
         # currently supports only one segment per network
         if segment['network_type'] != 'vlan':
             raise Exception(_("Fortinet Mechanism: failed to create network,"
