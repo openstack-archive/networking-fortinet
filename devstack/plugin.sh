@@ -137,7 +137,7 @@ function configure_fortigate_neutron_ml2_driver {
 function configure_tempest_for_fortigate_plugin {
     # sometimes it can take 3 dhcp discover attempts for vm
     # to get an ip address in our ci system.
-    iniset /$TEMPEST_CONFIG compute ping_timeout $PING_TIMEOUT
+    iniset /$TEMPEST_CONFIG validation ping_timeout $PING_TIMEOUT
     iniset /$TEMPEST_CONFIG fortigate enable_default_fwrule $Q_FORTINET_FWAAS_ENABLE_DEFAULT_FWRULE
 }
 
