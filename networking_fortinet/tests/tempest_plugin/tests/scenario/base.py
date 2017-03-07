@@ -17,9 +17,9 @@ from oslo_config import cfg
 
 from tempest.lib.common import ssh
 from tempest.lib import exceptions as lib_exc
-from tempest.scenario import manager
 
 from networking_fortinet.tests.tempest_plugin.tests import fwaas_client
+from networking_fortinet.tests.tempest_plugin.tests.scenario import manager
 
 CONF = cfg.CONF
 
