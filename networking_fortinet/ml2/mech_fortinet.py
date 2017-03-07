@@ -207,7 +207,7 @@ class FortinetMechanismDriver(driver_api.MechanismDriver):
             return
         # TODO(samsu): type driver support vlan only,
         # need to check later
-        vlanid = network['provider:segmentation_id']
+        vlanid = mech_context.network_segments[0]['segmentation_id']
         inf_name = const.PREFIX['inf'] + str(vlanid)
         try:
             utils.delete_vlanintf(self, context, name=inf_name,

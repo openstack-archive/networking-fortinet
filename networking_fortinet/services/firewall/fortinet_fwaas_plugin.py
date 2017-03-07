@@ -19,10 +19,10 @@ from oslo_log import log as logging
 from oslo_utils import excutils
 
 from neutron_lib import constants as n_consts
+from neutron_lib import context as neutron_context
 from neutron_lib.plugins import directory
 
 from neutron.api import extensions as neutron_extensions
-from neutron import context as neutron_context
 from neutron.db.models import l3 as l3_db
 from neutron.plugins.common import constants as const
 from neutron_fwaas.db.firewall import firewall_db
