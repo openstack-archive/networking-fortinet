@@ -514,6 +514,7 @@ class Fortinet_Interface(model_base.BASEV2, DBbase):
     ip = sa.Column(sa.String(32), default=const.EXT_DEF_DST)
     secondary_ip = sa.Column(sa.String(11), default="enable")
     alias = sa.Column(sa.String(32), default=None)
+    network_id = sa.Column(sa.String(36), default=None)
 
 
 class Fortinet_Interface_subip(model_base.BASEV2, DBbase):
