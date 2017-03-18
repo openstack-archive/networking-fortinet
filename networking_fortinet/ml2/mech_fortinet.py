@@ -189,7 +189,8 @@ class FortinetMechanismDriver(driver_api.MechanismDriver):
 
     def delete_network_precommit(self, mech_context):
         """Delete Network from the plugin specific database table."""
-        LOG.debug("delete_network_precommit: called")
+        LOG.debug("delete_network_precommit: called with %(ctx)s",
+                  {'ctx': mech_context.current})
         network = mech_context.current
         network_id = network['id']
         context = mech_context._plugin_context
