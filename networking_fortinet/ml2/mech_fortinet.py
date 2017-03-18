@@ -22,6 +22,9 @@ import netaddr
 from neutron_lib import constants as l3_constants
 from oslo_log import log as logging
 
+from neutron.callbacks import events
+from neutron.callbacks import registry
+from neutron.callbacks import resources as cb_resources
 from neutron.db import api as db_api
 from neutron.db.models import external_net as ext_db
 from neutron.db import models_v2
@@ -44,6 +47,7 @@ from networking_fortinet.tasks import tasks
 LOG = logging.getLogger(__name__)
 
 
+@registry.has_registry_receivers
 class FortinetMechanismDriver(driver_api.MechanismDriver):
     """ML2 Mechanism driver for Fortinet devices."""
 
@@ -189,33 +193,61 @@ class FortinetMechanismDriver(driver_api.MechanismDriver):
 
     def delete_network_precommit(self, mech_context):
         """Delete Network from the plugin specific database table."""
-        LOG.debug("delete_network_precommit: called")
-        network = mech_context.current
-        network_id = network['id']
+        LOG.debug("delete_network_precommit: called with %(ctx)s",
+                  {'ctx': mech_context.current})
         context = mech_context._plugin_context
-        if fortinet_db.query_record(context, ext_db.ExternalNetwork,
-                                    network_id=network_id):
+        network = mech_context.current
+        if network["router:external"]:
             # return when the network is external network
             # TODO(samsu): may check external network
             # before delete namespace
             return
-        tenant_id = network['tenant_id']
-        namespace = fortinet_db.query_record(context,
+        if network["provider:segmentation_id"]:
+            tenant_id = network['tenant_id']
+            namespace = fortinet_db.query_record(context,
                                     fortinet_db.Fortinet_ML2_Namespace,
                                     tenant_id=tenant_id)
-        if not namespace:
-            return
-        # TODO(samsu): type driver support vlan only,
-        # need to check later
-        vlanid = network['provider:segmentation_id']
-        inf_name = const.PREFIX['inf'] + str(vlanid)
-        try:
-            utils.delete_vlanintf(self, context, name=inf_name,
-                     vdom=namespace.vdom)
-        except Exception as e:
-            resources.Exinfo(e)
-            raise ml2_exc.MechanismDriverError(
-                method=sys._getframe().f_code.co_name)
+            if not namespace:
+                return
+            # TODO(samsu): type driver support vlan only,
+            # need to check later
+            vlanid = network['provider:segmentation_id']
+            inf_name = const.PREFIX['inf'] + str(vlanid)
+            try:
+                utils.delete_vlanintf(self, context, name=inf_name,
+                         vdom=namespace.vdom)
+            except Exception as e:
+                resources.Exinfo(e)
+                raise ml2_exc.MechanismDriverError(
+                    method=sys._getframe().f_code.co_name)
+
+    @registry.receives(cb_resources.SEGMENT, (events.PRECOMMIT_DELETE))
+    def handle_segment_change(self, rtype, event, trigger, context, segment):
+        LOG.debug("segment to delete is %(segment)s, context is %(ctx)s",
+                  {'segment': segment, 'ctx': context})
+        #if segment['segmentation_id'] and segment['network_type'] == "vlan":
+        #    network_id = segment.get('network_id')
+        #    network_with_segments = self.get_network(context, network_id)
+        #    mech_context = driver_context.NetworkContext(
+        #    self, context, network_with_segments)
+        #    tenant_id = mech_context.current['tenant_id']
+        #    plugin_context = mech_context._plugin_context
+        #    namespace = fortinet_db.query_record(plugin_context,
+        #                            fortinet_db.Fortinet_ML2_Namespace,
+        #                            tenant_id=tenant_id)
+        #    if not namespace:
+        #        return
+        #    # TODO(samsu): type driver support vlan only,
+        #    # need to check later
+        #    vlanid = segment['segmentation_id']
+        #    inf_name = const.PREFIX['inf'] + str(vlanid)
+        #    try:
+        #        utils.delete_vlanintf(self, plugin_context, name=inf_name,
+        #                 vdom=namespace.vdom)
+        #    except Exception as e:
+        #        resources.Exinfo(e)
+        #        raise ml2_exc.MechanismDriverError(
+        #            method=sys._getframe().f_code.co_name)
 
     def delete_network_postcommit(self, mech_context):
         """Delete network which translates to remove vlan interface
@@ -240,6 +272,9 @@ class FortinetMechanismDriver(driver_api.MechanismDriver):
         """Noop now, it is left here for future."""
         cur_network = mech_context.current
         org_network = mech_context.original
+        LOG.debug("update_network_precommit called: "
+                  "org_network: %(org)s, \nthe cur_network %(cur)s",
+                  {'org': org_network, 'cur': cur_network})
         if cur_network["router:external"] != org_network["router:external"]:
             LOG.info(_LI("update_network_precommit failed: the external "
                          "attribute cannot be updated, instead of updating the"
@@ -249,7 +284,6 @@ class FortinetMechanismDriver(driver_api.MechanismDriver):
                      {'org': org_network, 'cur': cur_network})
             raise NotImplementedError("The external attribute cannot be "
                                       "updated")
-        pass
 
     def update_network_postcommit(self, mech_context):
         """Noop now, it is left here for future."""
@@ -257,7 +291,7 @@ class FortinetMechanismDriver(driver_api.MechanismDriver):
 
     def create_subnet_precommit(self, mech_context):
         """Noop now, it is left here for future."""
-        LOG.debug("create_subnetwork_precommit: called")
+        pass
 
     def create_subnet_postcommit(self, mech_context, update=False):
         if not update:
@@ -328,7 +362,8 @@ class FortinetMechanismDriver(driver_api.MechanismDriver):
 
     def delete_subnet_precommit(self, mech_context):
         """Noop now, it is left here for future."""
-        LOG.debug("delete_subnetwork_precommit: called")
+        LOG.debug("delete_subnetwork_precommit: called with %(ctx)s",
+                  {'ctx': mech_context.current})
 
     def delete_subnet_postcommit(self, mech_context):
         """Noop now, it is left here for future."""
