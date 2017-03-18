@@ -88,7 +88,8 @@ def upgrade():
         sa.PrimaryKeyConstraint('name', 'vdom')
     )
     op.create_table('fortinet_ml2_namespaces',
-        sa.Column('id', mysql.INTEGER(display_width=11), nullable=False),
+        sa.Column('id', mysql.INTEGER(display_width=11), nullable=False,
+                  autoincrement=True),
         sa.Column('tenant_id', mysql.VARCHAR(length=36), nullable=False),
         sa.Column('vdom', mysql.VARCHAR(length=11), nullable=True),
         sa.PrimaryKeyConstraint('id', 'tenant_id')
