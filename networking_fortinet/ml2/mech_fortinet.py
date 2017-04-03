@@ -19,13 +19,13 @@
 import sys
 
 import netaddr
+from neutron_lib.api.definitions import portbindings
 from neutron_lib import constants as l3_constants
 from oslo_log import log as logging
 
 from neutron.db import api as db_api
 from neutron.db.models import external_net as ext_db
 from neutron.db import models_v2
-from neutron.extensions import portbindings
 
 from neutron.plugins.common import constants as p_const
 from neutron.plugins.ml2.common import exceptions as ml2_exc
