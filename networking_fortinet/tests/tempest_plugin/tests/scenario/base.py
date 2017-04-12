@@ -67,7 +67,7 @@ class FWaaSScenarioTest(fwaas_client.FWaaSClientMixin,
                         if should_reverse_connect:
                             raise
                     if check_reverse_curl:
-                        cmd1 = 'curl http://httpstat.us/200 |grep "200 OK"'
+                        cmd1 = 'curl -i https://www.google.com |grep "200 OK"'
                         cmd2 = 'curl http://www.eicar.org/download/eicar.com|\
                                 grep EICAR-STANDARD-ANTIVIRUS-TEST-FILE'
                         try:
