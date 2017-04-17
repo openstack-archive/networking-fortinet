@@ -162,9 +162,13 @@ class RouterStatic(Base):
 
     @classmethod
     def _rollback_data(cls, params, **result):
+        if result.get('results'):
+            mkey = result['reults']['mkey']
+        else:
+            mkey = result['mkey']
         return {
             'vdom': params['data']['vdom'],
-            'id': result['results']['mkey']
+            'id': mkey
         }
 
 
@@ -179,9 +183,13 @@ class FirewallPolicy(Base):
 
     @classmethod
     def _rollback_data(cls, params, **result):
+        if result.get('results'):
+            mkey = result['reults']['mkey']
+        else:
+            mkey = result['mkey']
         return {
             'vdom': params['data']['vdom'],
-            'id': result['results']['mkey']
+            'id': mkey
         }
 
 
@@ -206,9 +214,13 @@ class DhcpServer(Base):
 
     @classmethod
     def _rollback_data(cls, params, **result):
+        if result.get('results'):
+            mkey = result['reults']['mkey']
+        else:
+            mkey = result['mkey']
         return {
             'vdom': params['data']['vdom'],
-            'id': result['results']['mkey']
+            'id': mkey
         }
 
 
