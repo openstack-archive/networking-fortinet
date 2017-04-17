@@ -14,6 +14,7 @@
 
 import mock
 from oslo_config import cfg
+from oslo_db import options as db_options
 from oslo_db.sqlalchemy import session
 import six
 
@@ -21,18 +22,15 @@ from networking_fortinet.common import config
 from networking_fortinet.ml2 import mech_fortinet
 from networking_fortinet.tests.unit import (
     test_fortinet_common as mocked)
-
 TEST_SEG1 = 'seg1'
 
 SUPPORTED_DR = ['vlan']
 
 
-class TestFortinetMechDriver(mocked.FortinetTestCase,
-                             mocked.ConfigMixin):
+class TestFortinetMechDriver(mocked.FortinetTestCase):
 
     def setUp(self):
         super(TestFortinetMechDriver, self).setUp()
-        mocked.ConfigMixin.set_up_mocks(self)
         self.driver = mech_fortinet.FortinetMechanismDriver()
         self.driver.sync_conf_to_db = mock.Mock()
         self.driver.sync_conf_to_db.return_value = 'ok'
@@ -71,8 +69,8 @@ class TestFortinetMechDriver(mocked.FortinetTestCase,
             'id': '123',
             'network_type': 'vlan'
         }
-        context = Fake_context()
-        mech_context = Fake_mech_context(_plugin_context=context,
+        ctx = Fake_context()
+        mech_context = Fake_mech_context(_plugin_context=ctx,
                                          current=net,
                                          network_segments=[segment])
         return mech_context
@@ -92,8 +90,8 @@ class TestFortinetMechDriver(mocked.FortinetTestCase,
             'gateway_ip': u'172.20.21.1',
             'shared': False
         }
-        context = Fake_context()
-        mech_context = Fake_mech_context(_plugin_context=context,
+        ctx = Fake_context()
+        mech_context = Fake_mech_context(_plugin_context=ctx,
                                          current=subnet)
         return mech_context
 
@@ -111,8 +109,8 @@ class TestFortinetMechDriver(mocked.FortinetTestCase,
                 'tenant_id': u'11513667f4ee4a14acb0985659456f24',
                 'mac_address': u'00: 0c: 29: d9: 18: 3f'
                }
-        context = Fake_context()
-        mech_context = Fake_mech_context(_plugin_context=context,
+        ctx = Fake_context()
+        mech_context = Fake_mech_context(_plugin_context=ctx,
                                          current=port)
         return mech_context
 
@@ -326,10 +324,8 @@ class TestFortinetMechDriver(mocked.FortinetTestCase,
 
 class Fake_context(object):
     def __init__(self):
+        db_options.set_defaults(cfg.CONF, connection='sqlite://')
         engine = session.EngineFacade.from_config(cfg.CONF)
-        if not [driver for driver in cfg.CONF.ml2.type_drivers
-                if driver in SUPPORTED_DR]:
-            exit()
         self.session = engine.get_session(autocommit=True,
                                           expire_on_commit=False)
         self.request_id = 'fake_migration_context'
