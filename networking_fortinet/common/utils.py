@@ -287,7 +287,11 @@ def add_by_id(obj, context, cls, resource, **kwargs):
     record = add_record(obj, context, cls, **kwargs)
     res = add_resource_with_id(obj, context, record, resource, **kwargs)
     if not getattr(record, 'edit_id'):
-        cls.update_record(context, record, edit_id=res['results']['mkey'])
+        if res.get('results'):
+            edit_id = res['results']['mkey']
+        else:
+            edit_id = res['mkey']
+        cls.update_record(context, record, edit_id=edit_id)
     return record
 
 
@@ -394,7 +398,11 @@ def add_dhcpserver(obj, context, **kwargs):
     res = add_resource_with_id(obj, context, record,
                                resources.DhcpServer, **kwargs)
     if not record.edit_id:
-        cls.update_record(context, record, edit_id=res['results']['mkey'])
+        if res.get('results'):
+            edit_id = res['results']['mkey']
+        else:
+            edit_id = res['mkey']
+        cls.update_record(context, record, edit_id=edit_id)
 
 
 def set_dhcpserver(obj, context, **kwargs):
@@ -611,7 +619,11 @@ def add_routerstatic(obj, context, **kwargs):
     res = add_resource_with_id(obj, context, record,
                                resources.RouterStatic, **kwargs)
     if not getattr(record, 'edit_id'):
-        cls.update_record(context, record, edit_id=res['results']['mkey'])
+        if res.get('results'):
+            edit_id = res['results']['mkey']
+        else:
+            edit_id = res['mkey']
+        cls.update_record(context, record, edit_id=edit_id)
     return record
 
 
