@@ -1,8 +1,8 @@
 [[local|localrc]]
 
 # CHANGEME: networking-fortinet plugin repo url
-enable networking-fortinet file:///home/stack/networking-fortinet master
-#enable_plugin networking-fortinet https://git.openstack.org/openstack/networking-fortinet master
+enable networking-fortinet file:///home/stack/networking-fortinet stable/ocata
+#enable_plugin networking-fortinet https://git.openstack.org/openstack/networking-fortinet stable/ocata
 
 Q_ML2_PLUGIN_VLAN_TYPE_OPTIONS='network_vlan_ranges=physnet1:1009:1099'
 Q_DVR_MODE=dvr

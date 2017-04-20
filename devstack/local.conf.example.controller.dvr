@@ -7,8 +7,8 @@ disable_service tempest
 enable_service q-svc q-fwaas n-novnc
 
 # CHANGEME: customized git repo location
-enable_plugin networking-fortinet file:///home/stack/networking-fortinet master
-#enable_plugin networking-fortinet https://git.openstack.org/openstack/networking-fortinet master
+enable_plugin networking-fortinet file:///home/stack/networking-fortinet stable/ocata
+#enable_plugin networking-fortinet https://git.openstack.org/openstack/networking-fortinet stable/ocata
 
 # CHANGEME: vlan range for tenant networks
 Q_ML2_PLUGIN_VLAN_TYPE_OPTIONS='network_vlan_ranges=physnet1:1009:1099'
@@ -21,7 +21,7 @@ FLOATING_RANGE=10.160.38.1/24
 PUBLIC_NETWORK_GATEWAY=10.160.38.1
 
 # CHANGEME: if q-fwaas is enabled and fortigate is used as firewall.
-enable_plugin neutron-fwaas https://git.openstack.org/openstack/neutron-fwaas master
+enable_plugin neutron-fwaas https://git.openstack.org/openstack/neutron-fwaas stable/ocata
 FWAAS_PLUGIN=fwaas_fortinet
 
 # fortigate ml2 plugin parameters

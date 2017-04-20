@@ -10,7 +10,7 @@ This is an installation guide for enabling Fortigate support on OpenStack.
 This guide does not necessarily cover all OpenStack installation steps especially
 at production scale.
 
-Please note this instruction only applies to liberty or master version of OpenStack.
+Please note this instruction only applies to liberty to master version of OpenStack.
 
 
 2. Prerequisites
