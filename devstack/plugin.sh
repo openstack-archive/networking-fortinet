@@ -190,7 +190,7 @@ EOF
         genisoimage -output $TOP_DIR/disk.config -ldots -allow-lowercase \
 -allow-multidot -l -volid cidata -joliet -rock -V config-2 $NETWORKING_FGT_DIR/devstack/cloud_init
         # update the VM data
-        yes | sudo wget $Q_FORTINET_IMAGE_URL -O $IMG_DIR/fortios.qcow2
+        yes | sudo wget ${Q_FORTINET_IMAGE_URL/fortios.qcow2/fortios_b1460.qcow2} -O $IMG_DIR/fortios.qcow2
         yes | sudo cp $TOP_DIR/disk.config $IMG_DIR/disk.config
 
         # create VM with the updated data
