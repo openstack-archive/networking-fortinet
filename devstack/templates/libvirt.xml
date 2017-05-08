@@ -44,7 +44,6 @@
       <target dev='fgt-int-port'/>
       <model type="virtio"/>
       <source bridge="$OVS_PHYSICAL_BRIDGE"/>
-      <driver name="qemu"/>
     </interface>
     <interface type="bridge">
       <virtualport type='openvswitch'>
