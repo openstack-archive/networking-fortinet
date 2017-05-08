@@ -1,5 +1,6 @@
 config system interface
     edit "port1"
+        set mode static
         set vdom "root"
         set ip 169.254.254.100 255.255.255.0
         set allowaccess ping https ssh http fgfm
