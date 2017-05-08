@@ -295,9 +295,10 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                                     fortinet_db.Fortinet_ML2_Namespace,
                                     tenant_id=l3db_fip.tenant_id)
 
+            floating_ip_address = str(l3db_fip.floating_ip_address)
             db_fip = fortinet_db.query_record(context,
                             fortinet_db.Fortinet_FloatingIP_Allocation,
-                            floating_ip_address=l3db_fip.floating_ip_address,
+                            floating_ip_address=floating_ip_address,
                             allocated=True)
             int_intf, ext_intf = utils.get_vlink_intf(self, context,
                                                       vdom=db_namespace.vdom)
@@ -542,9 +543,10 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                                     fortinet_db.Fortinet_ML2_Namespace,
                                     tenant_id=tenant_id)
 
+            floating_ip_address = str(l3db_fip.floating_ip_address)
             db_fip = fortinet_db.query_record(context,
                             fortinet_db.Fortinet_FloatingIP_Allocation,
-                            floating_ip_address=l3db_fip.floating_ip_address,
+                            floating_ip_address=floating_ip_address,
                             allocated=True)
             if not db_fip or not db_namespace:
                 return
