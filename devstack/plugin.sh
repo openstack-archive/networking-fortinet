@@ -87,7 +87,7 @@ function install_fortigate_neutron_ml2_driver {
     echo "Installing the networking-fortinet driver for Fortigate"
     sudo pip install -e .
     # use the latest fortiosclient for test purpose
-    sudo pip install -U git+https://github.com/jerryz1982/fortiosclient.git
+    sudo pip install -U git+https://github.com/jerryz1982/fortiosclient.git@5.6
 }
 
 function configure_fortigate_neutron_ml2_driver {
@@ -190,7 +190,8 @@ EOF
         genisoimage -output $TOP_DIR/disk.config -ldots -allow-lowercase \
 -allow-multidot -l -volid cidata -joliet -rock -V config-2 $NETWORKING_FGT_DIR/devstack/cloud_init
         # update the VM data
-        yes | sudo wget $Q_FORTINET_IMAGE_URL -O $IMG_DIR/fortios.qcow2
+        # yes | sudo wget ${Q_FORTINET_IMAGE_URL/fortios.qcow2/fortios_b1449.qcow2} -O $IMG_DIR/fortios.qcow2
+        yes | sudo wget ${Q_FORTINET_IMAGE_URL} -O $IMG_DIR/fortios.qcow2
         yes | sudo cp $TOP_DIR/disk.config $IMG_DIR/disk.config
 
         # create VM with the updated data
