@@ -85,7 +85,7 @@ class FortinetMechanismDriver(driver_api.MechanismDriver):
         for key in const.FORTINET_PARAMS:
             self.sync_conf_to_db(key)
 
-        session = db_api.get_session()
+        session = db_api.get_writer_session()
         try:
             utils.add_vdom(self, session, vdom=const.EXT_VDOM,
                            tenant_id=const.FAKE_TENANT_ID)
@@ -100,7 +100,7 @@ class FortinetMechanismDriver(driver_api.MechanismDriver):
     def sync_conf_to_db(self, param):
         cls = getattr(fortinet_db, const.FORTINET_PARAMS[param]['cls'])
         conf_list = self.get_range(param)
-        session = db_api.get_session()
+        session = db_api.get_writer_session()
         records = fortinet_db.query_records(session, cls)
         for record in records:
             kwargs = {}
