@@ -23,7 +23,7 @@ following:
 
     2. Controller and compute nodes are installed with Ubuntu 14.04 or CentOS7.
 
-    3. Fortigate is 5.2.3 GA version and up. Clean configuration with only control IP.
+    3. Fortigate's FOS is 5.2, 5.4, 5.6. Clean configuration with only control IP.
 
     4. 3 virtual switches(ESXI vswitch or linux bridge) or physical switches/vlans:
        1 for control plane, 1 for tenant network, 1 for external network. Vlanids are

@@ -573,6 +573,10 @@ def head_firewall_policy(obj, context, **kwargs):
             obj, context, resources.FirewallPolicy.get, vdom=kwargs['vdom'])
         if res.get('results'):
             head = res['results'][0]['policyid']
+            # this means policy was not newly created and already on head.
+            # moving it before itself would fail on FOS5.6
+            if head == kwargs['id']:
+                return
             kwargs.setdefault('before', head)
     if 'before' in kwargs and 'vdom' in kwargs:
         op(obj, context, resources.FirewallPolicy.move,
