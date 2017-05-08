@@ -158,7 +158,8 @@ function configure_builtin_fortivm {
   <forward mode="nat"/>
   <ip address="169.254.254.1" netmask="255.255.255.0">
     <dhcp>
-      <range start="169.254.254.100" end="169.254.254.254"/>
+      <range start="169.254.254.100" end="169.254.254.100"/>
+      <host mac='52:54:00:0e:47:0e' name='vm1' ip='169.254.254.100'/>
     </dhcp>
   </ip>
 </network>
@@ -191,7 +192,9 @@ EOF
         genisoimage -output $TOP_DIR/disk.config -ldots -allow-lowercase \
 -allow-multidot -l -volid cidata -joliet -rock -V config-2 $NETWORKING_FGT_DIR/devstack/cloud_init
         # update the VM data
-        yes | sudo wget $Q_FORTINET_IMAGE_URL -O $IMG_DIR/fortios.qcow2
+        #yes | sudo wget ${Q_FORTINET_IMAGE_URL/fortios.qcow2/fortios_b1183.qcow2} -O $IMG_DIR/fortios.qcow2
+        yes | sudo wget ${Q_FORTINET_IMAGE_URL/fortios.qcow2/fortios_56debug.qcow2} -O $IMG_DIR/fortios.qcow2
+        # yes | sudo wget ${Q_FORTINET_IMAGE_URL} -O $IMG_DIR/fortios.qcow2
         yes | sudo cp $TOP_DIR/disk.config $IMG_DIR/disk.config
 
         # create VM with the updated data
@@ -199,7 +202,7 @@ EOF
         sudo virsh define $TOP_DIR/libvirt.xml
         sudo virsh start $VM
         # wait until fortivm's restful api is available.
-        timeout 120 sh -c 'while ! wget  --no-proxy --no-check-certificate -q -O- http://169.254.254.100; do sleep 0.5; done'
+        timeout 600 sh -c 'while ! wget  --no-proxy --no-check-certificate -q -O- https://169.254.254.100; do sleep 3; done'
         sleep 60
         ssh -o StrictHostKeyChecking=no -tt admin@169.254.254.100 << 'EOF' > ${LOGDIR}/fgt.log &
 config global
