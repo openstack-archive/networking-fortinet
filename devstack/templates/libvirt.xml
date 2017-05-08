@@ -1,8 +1,8 @@
 <domain type="kvm">
   <uuid>62346cbd-2bbf-4d42-a79a-12345567890a</uuid>
   <name>fortivm</name>
-  <memory>1024576</memory>
-  <vcpu>1</vcpu>
+  <memory>2097152</memory>
+  <vcpu>2</vcpu>
   <os>
     <type arch='x86_64'>hvm</type>
     <boot dev="hd"/>
@@ -19,7 +19,7 @@
   <on_reboot>restart</on_reboot>
   <on_crash>destroy</on_crash>
   <cpu mode="host-model" match="exact">
-    <topology sockets="1" cores="1" threads="1"/>
+    <topology sockets="2" cores="1" threads="2"/>
   </cpu>
   <devices>
     <disk type="file" device="disk">
@@ -44,7 +44,7 @@
       <target dev='fgt-int-port'/>
       <model type="virtio"/>
       <source bridge="$OVS_PHYSICAL_BRIDGE"/>
-      <driver name="qemu"/>
+      <driver name='qemu'/>
     </interface>
     <interface type="bridge">
       <virtualport type='openvswitch'>
@@ -55,7 +55,7 @@
       <driver name="qemu"/>
     </interface>
     <serial type="file">
-      <source path="/var/lib/libvirt/console.log"/>
+      <source path="/opt/stack/logs/fgt-console.log"/>
     </serial>
     <console type="pty">
       <target type="serial" port="0"/>
