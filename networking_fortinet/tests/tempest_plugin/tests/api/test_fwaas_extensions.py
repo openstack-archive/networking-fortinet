@@ -277,6 +277,7 @@ class FortigateFWaaSExtensionTestJSON(base.BaseFWaaSTest):
         self.assertNotIn(router1['id'], updated_firewall['router_ids'])
         self.assertEqual(0, len(updated_firewall['router_ids']))
 
+    @decorators.skip_because(bug="1694363")
     @decorators.idempotent_id('1b5cf8f6-cd2e-4f3f-aaa0-e12c079b6d22')
     def test_firewall_insertion_mode_one_firewall_per_router(self):
         # Create router required for an ACTIVE firewall
@@ -293,7 +294,7 @@ class FortigateFWaaSExtensionTestJSON(base.BaseFWaaSTest):
         self.addCleanup(self._try_delete_firewall, created_firewall['id'])
 
         # Try to create firewall with the same router
-        self.assertRaisesRegexp(
+        self.assertRaisesRegex(
             lib_exc.Conflict,
             "An object with that identifier already exists",
             self.firewalls_client.create_firewall,
