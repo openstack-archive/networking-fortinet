@@ -293,7 +293,7 @@ class FortigateFWaaSExtensionTestJSON(base.BaseFWaaSTest):
         self.addCleanup(self._try_delete_firewall, created_firewall['id'])
 
         # Try to create firewall with the same router
-        self.assertRaisesRegexp(
+        self.assertRaisesRegex(
             lib_exc.Conflict,
             "An object with that identifier already exists",
             self.firewalls_client.create_firewall,
