@@ -219,7 +219,7 @@ class TestFortigateFWaaS(base.FWaaSScenarioTest):
     def _allow_ssh_and_icmp(self, ctx):
         fw_ssh_rule = self.create_firewall_rule(
             protocol="tcp",
-            destination_port=22,
+            destination_port="22",
             action="allow")
         fw_icmp_rule = self.create_firewall_rule(
             protocol="icmp",

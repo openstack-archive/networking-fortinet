@@ -18,8 +18,10 @@ from netaddr import IPNetwork
 from oslo_log import log as logging
 from oslo_utils import excutils
 
+from neutron_lib.api.definitions import firewall as fw_ext
 from neutron_lib import constants as n_consts
 from neutron_lib import context as neutron_context
+from neutron_lib.exceptions import firewall_v1 as fw_exc
 from neutron_lib.plugins import directory
 
 from neutron.api import extensions as neutron_extensions
@@ -28,7 +30,6 @@ from neutron.plugins.common import constants as const
 from neutron_fwaas.db.firewall import firewall_db
 from neutron_fwaas.db.firewall import firewall_router_insertion_db
 import neutron_fwaas.extensions as extensions
-from neutron_fwaas.extensions import firewall as fw_ext
 
 from networking_fortinet._i18n import _LE
 from networking_fortinet.common import config
@@ -54,7 +55,7 @@ class FortinetFirewallPlugin(
     """
     neutron_extensions.append_api_extensions_path(extensions.__path__)
     supported_extension_aliases = ["fwaas", "fwaasrouterinsertion"]
-    path_prefix = fw_ext.FIREWALL_PREFIX
+    path_prefix = fw_ext.API_PREFIX
 
     def __init__(self):
         """Do the initialization for the firewall service plugin here."""
@@ -88,7 +89,7 @@ class FortinetFirewallPlugin(
         if fwall['status'] in [const.PENDING_CREATE,
                                const.PENDING_UPDATE,
                                const.PENDING_DELETE]:
-            raise fw_ext.FirewallInPendingState(firewall_id=firewall_id,
+            raise fw_exc.FirewallInPendingState(firewall_id=firewall_id,
                                                 pending_state=fwall['status'])
 
     def _ensure_update_firewall_policy(self, context, firewall_policy_id):
@@ -357,7 +358,7 @@ class FortinetFirewallPlugin(
                     fortinet_db.Fortinet_ML2_Namespace.query_one(
                         context, tenant_id=tenant_id), 'vdom', None)
                 if not vdom:
-                    raise fw_ext.FirewallInternalDriverError(
+                    raise fw_exc.FirewallInternalDriverError(
                         driver='Fortinet_fwaas_plugin')
                 if default_fwr:
                     self._add_firewall_rule(context, tenant_id, **default_fwr)
@@ -565,7 +566,7 @@ class FortinetFirewallPlugin(
                                                fwr_db.firewall_policy_id)
             if 'shared' in fwr and not fwr['shared']:
                 if fwr_db['tenant_id'] != fwp_db['tenant_id']:
-                    raise fw_ext.FirewallRuleInUse(firewall_rule_id=id)
+                    raise fw_exc.FirewallRuleInUse(firewall_rule_id=id)
         fwr.setdefault('source_port',
                        self._get_port_range_from_min_max_ports(
                            fwr_db['source_port_range_min'],

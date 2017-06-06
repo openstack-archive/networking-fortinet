@@ -23,11 +23,11 @@ from oslo_utils import excutils
 
 from neutron_lib import constants as l3_constants
 from neutron_lib import exceptions as n_exc
+from neutron_lib.plugins import constants as p_consts
 from neutron_lib.plugins import directory
 
 from neutron.db import api as db_api
 from neutron.db.models import l3 as l3_db
-from neutron.plugins.common import constants as service_consts
 from neutron.plugins.ml2 import db
 from neutron.services.l3_router import l3_router_plugin as router
 
@@ -106,7 +106,7 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
         LOG.debug("delete_router: router id=%s", id)
         try:
             if self.enable_fwaas:
-                fw_plugin = directory.get_plugin(service_consts.FIREWALL)
+                fw_plugin = directory.get_plugin(p_consts.FIREWALL)
                 fw_plugin.update_firewall_for_delete_router(context, id)
             with db_api.context_manager.writer.using(context):
                 router = fortinet_db.query_record(context, l3_db.Router, id=id)
