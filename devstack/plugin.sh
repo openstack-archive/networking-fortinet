@@ -85,9 +85,10 @@ source $TOP_DIR/lib/neutron_plugins/ml2
 function install_fortigate_neutron_ml2_driver {
     cd $NETWORKING_FGT_DIR
     echo "Installing the networking-fortinet driver for Fortigate"
-    sudo pip install -e .
+    sudo pip install -c $REQUIREMENTS_DIR/upper-constraints.txt -e .
     # use the latest fortiosclient for test purpose
-    sudo pip install -U git+https://github.com/jerryz1982/fortiosclient.git
+    sudo pip install -c $REQUIREMENTS_DIR/upper-constraints.txt -r https://raw.githubusercontent.com/jerryz1982/fortiosclient/master/requirements.txt
+    sudo pip install git+https://github.com/jerryz1982/fortiosclient.git@master
 }
 
 function configure_fortigate_neutron_ml2_driver {
