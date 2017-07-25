@@ -301,7 +301,7 @@ class FortigateFWaaSExtensionTestJSON(base.BaseFWaaSTest):
             firewall_policy_id=self.fw_policy['id'],
             router_ids=[router['id']])
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @decorators.idempotent_id('4ebfac1d-d521-44de-a4a0-81b79312f362')
     def test_firewall_rule_insertion_position_removal_rule_from_policy(self):
         # Create firewall rule
