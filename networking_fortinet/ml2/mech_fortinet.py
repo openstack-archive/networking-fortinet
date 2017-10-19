@@ -34,7 +34,7 @@ from networking_fortinet._i18n import _, _LE, _LI
 from networking_fortinet.common import config
 from networking_fortinet.common import constants as const
 from networking_fortinet.common import resources as resources
-from networking_fortinet.common import utils as utils
+from networking_fortinet.common import utils
 from networking_fortinet.db import models as fortinet_db
 from networking_fortinet.tasks import constants as t_consts
 from networking_fortinet.tasks import tasks
