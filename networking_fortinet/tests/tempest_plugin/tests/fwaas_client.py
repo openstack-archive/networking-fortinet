@@ -21,7 +21,7 @@ from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions as lib_exc
 
-from neutron.plugins.common import constants as p_const
+from neutron_lib import constants as p_const
 
 from networking_fortinet.tests.tempest_plugin.services import client
 

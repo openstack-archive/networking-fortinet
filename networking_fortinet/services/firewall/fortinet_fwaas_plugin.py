@@ -26,7 +26,6 @@ from neutron_lib.plugins import directory
 
 from neutron.api import extensions as neutron_extensions
 from neutron.db.models import l3 as l3_db
-from neutron.plugins.common import constants as const
 from neutron_fwaas.db.firewall import firewall_db
 from neutron_fwaas.db.firewall import firewall_router_insertion_db
 import neutron_fwaas.extensions as extensions
@@ -66,7 +65,7 @@ class FortinetFirewallPlugin(
         firewall_db.subscribe()
 
     def _rpc_update_firewall(self, context, firewall_id):
-        status_update = {"firewall": {"status": const.PENDING_UPDATE}}
+        status_update = {"firewall": {"status": n_consts.PENDING_UPDATE}}
         super(FortinetFirewallPlugin, self).update_firewall(
             context, firewall_id, status_update)
         fw_with_rules = self._make_firewall_dict_with_rules(context,
@@ -86,9 +85,9 @@ class FortinetFirewallPlugin(
 
     def _ensure_update_firewall(self, context, firewall_id):
         fwall = self.get_firewall(context, firewall_id)
-        if fwall['status'] in [const.PENDING_CREATE,
-                               const.PENDING_UPDATE,
-                               const.PENDING_DELETE]:
+        if fwall['status'] in [n_consts.PENDING_CREATE,
+                               n_consts.PENDING_UPDATE,
+                               n_consts.PENDING_DELETE]:
             raise fw_exc.FirewallInPendingState(firewall_id=firewall_id,
                                                 pending_state=fwall['status'])
 
@@ -140,7 +139,7 @@ class FortinetFirewallPlugin(
         if not fw_new_rtrs:
             # no messaging to agent needed, and fw needs to go
             # to INACTIVE(no associated rtrs) state.
-            status = const.INACTIVE
+            status = n_consts.INACTIVE
             fw = super(FortinetFirewallPlugin, self).create_firewall(
                 context, firewall, status)
             fw['router_ids'] = []
@@ -188,13 +187,13 @@ class FortinetFirewallPlugin(
         if not fw_new_rtrs and not fw_current_rtrs:
             # no messaging to agent needed, and we need to continue
             # in INACTIVE state
-            firewall['firewall']['status'] = const.INACTIVE
+            firewall['firewall']['status'] = n_consts.INACTIVE
             fw = super(FortinetFirewallPlugin, self).update_firewall(
                 context, id, firewall)
             fw['router_ids'] = []
             return fw
         else:
-            firewall['firewall']['status'] = const.PENDING_UPDATE
+            firewall['firewall']['status'] = n_consts.PENDING_UPDATE
             fw = super(FortinetFirewallPlugin, self).update_firewall(
                 context, id, firewall)
             fw['router_ids'] = fw_new_rtrs
@@ -237,7 +236,7 @@ class FortinetFirewallPlugin(
         fw_with_rules = (
             self._make_firewall_dict_with_rules(context, id))
 
-        status = {"firewall": {"status": const.PENDING_DELETE}}
+        status = {"firewall": {"status": n_consts.PENDING_DELETE}}
         super(FortinetFirewallPlugin, self).update_firewall(
             context, id, status)
         # Reflect state change in fw_with_rules
@@ -351,7 +350,7 @@ class FortinetFirewallPlugin(
                     self._delete_firewall_rule(
                         context, tenant_id, **default_fwr)
                 self.update_firewall_status(
-                    context, fw_with_rules['id'], const.INACTIVE)
+                    context, fw_with_rules['id'], n_consts.INACTIVE)
 
             if fw_with_rules.get('add-router-ids', None):
                 vdom = getattr(
@@ -366,10 +365,10 @@ class FortinetFirewallPlugin(
                         list(fw_with_rules.get('firewall_rule_list', None))):
                     self._add_firewall_rule(context, tenant_id, **fwr)
                 self.update_firewall_status(
-                    context, fw_with_rules['id'], const.ACTIVE)
+                    context, fw_with_rules['id'], n_consts.ACTIVE)
             else:
                 self.update_firewall_status(
-                    context, fw_with_rules['id'], const.INACTIVE)
+                    context, fw_with_rules['id'], n_consts.INACTIVE)
         except Exception as e:
             with excutils.save_and_reraise_exception():
                 LOG.error(_LE("apply_firewall %(fws)s failed"),

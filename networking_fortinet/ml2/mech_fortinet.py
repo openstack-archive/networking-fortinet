@@ -20,14 +20,13 @@ import sys
 
 import netaddr
 from neutron_lib.api.definitions import portbindings
-from neutron_lib import constants as l3_constants
+from neutron_lib import constants as p_const
 from oslo_log import log as logging
 
 from neutron.db import api as db_api
 from neutron.db.models import external_net as ext_db
 from neutron.db import models_v2
 
-from neutron.plugins.common import constants as p_const
 from neutron.plugins.ml2.common import exceptions as ml2_exc
 from neutron.plugins.ml2 import driver_api
 
@@ -465,7 +464,7 @@ class FortinetMechanismDriver(driver_api.MechanismDriver):
         """
         LOG.debug("bind_port() called")
         if (context.current['device_owner'] ==
-            l3_constants.DEVICE_OWNER_ROUTER_INTF):
+            p_const.DEVICE_OWNER_ROUTER_INTF):
             # check controller to see if the port exists
             # so this driver can be run in parallel with others that add
             # support for external port bindings
