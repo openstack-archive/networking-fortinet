@@ -21,6 +21,7 @@ import sys
 import netaddr
 from neutron_lib.api.definitions import portbindings
 from neutron_lib import constants as p_const
+from neutron_lib.plugins.ml2 import api as driver_api
 from oslo_log import log as logging
 
 from neutron.db import api as db_api
@@ -28,7 +29,6 @@ from neutron.db.models import external_net as ext_db
 from neutron.db import models_v2
 
 from neutron.plugins.ml2.common import exceptions as ml2_exc
-from neutron.plugins.ml2 import driver_api
 
 from networking_fortinet._i18n import _, _LE, _LI
 from networking_fortinet.common import config
