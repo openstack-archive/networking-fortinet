@@ -33,7 +33,7 @@ import neutron_fwaas.extensions as extensions
 from networking_fortinet._i18n import _LE
 from networking_fortinet.common import config
 from networking_fortinet.common import constants as constants
-from networking_fortinet.common import utils as utils
+from networking_fortinet.common import utils
 from networking_fortinet.db import models as fortinet_db
 from networking_fortinet.tasks import constants as t_consts
 from networking_fortinet.tasks import tasks
