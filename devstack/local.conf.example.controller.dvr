@@ -73,6 +73,5 @@ LOGFILE=/opt/stack/logs/stack.sh.log
 VERBOSE=True
 ENABLE_DEBUG_LOG_LEVEL=True
 LOG_COLOR=False
-SCREEN_LOGDIR=/opt/stack/logs
 
 enable_service dstat
