@@ -23,7 +23,7 @@ from neutron.common import constants as l3_constants
 
 from neutron.db import models_v2, l3_db
 
-from neutron.db.external_net_db import ExternalNetwork
+from neutron.db import external_net_db
 
 from oslo_db.sqlalchemy import session
 import neutron.plugins.ml2.models as ml2_db
@@ -235,7 +235,8 @@ def network_migration(context, mech_driver):
             db_seg = fortinet_db.query_record(context, ml2_db.NetworkSegment,
                                               network_id=record.id)
             cls2dict(record, net)
-            db_extnet = fortinet_db.query_record(context, ExternalNetwork,
+            db_extnet = fortinet_db.query_record(context,
+                                              external_net_db.ExternalNetwork,
                                               network_id=record.id)
             if db_extnet:
                 net['router:external'] = True

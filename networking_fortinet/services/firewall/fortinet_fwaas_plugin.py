@@ -13,8 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-from netaddr import IPAddress
-from netaddr import IPNetwork
+import netaddr
 from oslo_log import log as logging
 from oslo_utils import excutils
 
@@ -697,6 +696,7 @@ class FortinetFirewallPlugin(
             status=n_consts.FLOATINGIP_STATUS_ACTIVE)
         for fip in db_fips:
             if getattr(fip, 'fixed_ip_address', None) and \
-                    IPAddress(fip.fixed_ip_address) in IPNetwork(fw_net):
+                    netaddr.IPAddress(fip.fixed_ip_address) in \
+                    netaddr.IPNetwork(fw_net):
                 fw_fips.append((fip.id, fip.floating_ip_address))
         return fw_fips
