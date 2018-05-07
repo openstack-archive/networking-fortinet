@@ -319,7 +319,7 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                                srcintf=int_intf,
                                dstintf=vlan_inf,
                                dstaddr=db_fip.floating_ip_address,
-                               nat='enable')
+                               nat='disable')
 
             utils.add_fwaddress(self, context,
                                 name=fixed_ip_address,
@@ -482,7 +482,7 @@ class FortinetL3ServicePlugin(router.L3RouterPlugin):
                                    vdom=const.EXT_VDOM,
                                    dstintf=ext_intf,
                                    dstaddr=db_fip.vip_name,
-                                   nat='enable')
+                                   nat='disable')
 
                 utils.add_routerstatic(self, context,
                                        vdom=const.EXT_VDOM,
