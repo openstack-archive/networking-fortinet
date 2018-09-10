@@ -24,9 +24,9 @@ from oslo_utils import excutils
 from neutron_lib import constants as l3_constants
 from neutron_lib import exceptions as n_exc
 from neutron_lib.plugins import constants as p_consts
+from neutron_lib.db import api as db_api
 from neutron_lib.plugins import directory
 
-from neutron.db import api as db_api
 from neutron.db.models import l3 as l3_db
 from neutron.plugins.ml2 import db
 from neutron.services.l3_router import l3_router_plugin as router

@@ -20,8 +20,6 @@ import six
 from sqlalchemy.orm import sessionmaker
 from oslo_db import options as db_options
 
-from neutron.db import api as db_api
-
 from networking_fortinet.common import config
 from networking_fortinet.ml2 import mech_fortinet
 from networking_fortinet.tests.unit import (
