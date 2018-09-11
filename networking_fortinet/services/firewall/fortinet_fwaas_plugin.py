@@ -22,6 +22,7 @@ from neutron_lib.api.definitions import firewall as fw_ext
 from neutron_lib import constants as n_consts
 from neutron_lib import context as neutron_context
 from neutron_lib.exceptions import firewall_v1 as fw_exc
+from neutron_lib.plugins import constants as p_consts
 from neutron_lib.plugins import directory
 
 from neutron.api import extensions as neutron_extensions
@@ -111,7 +112,7 @@ class FortinetFirewallPlugin(
         if router_ids == n_consts.ATTR_NOT_SPECIFIED:
             # old semantics router-ids keyword not specified pick up
             # all routers on tenant.
-            l3_plugin = directory.get_plugin(n_consts.L3)
+            l3_plugin = directory.get_plugin(p_consts.L3)
             ctx = neutron_context.get_admin_context()
             routers = l3_plugin.get_routers(ctx)
             router_ids = [
