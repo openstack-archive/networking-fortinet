@@ -65,7 +65,7 @@ In this scenario, Fortigate pluggin will be installed on a setup which has alrea
 
 On the controller node:
 
-1. pip install git+git://git.openstack.org/openstack/networking-fortinet
+1. pip install git+https://git.openstack.org/openstack/networking-fortinet
 
 2. The following modifications are needed in:
 

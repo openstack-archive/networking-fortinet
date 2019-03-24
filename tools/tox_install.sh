@@ -28,7 +28,7 @@ elif [ -x "$ZUUL_CLONER" ]; then
     cd /tmp
     $ZUUL_CLONER --cache-dir \
         /opt/git \
-        git://git.openstack.org \
+        https://git.openstack.org \
         openstack/neutron
     cd openstack/neutron
     pip install -e .
